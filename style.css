@@ -1,0 +1,103 @@
+body {
+  background: #0b0b0b;
+  color: #00ff66;
+  font-family: Consolas, "Courier New", monospace;
+  padding: 20px;
+}
+
+#terminal {
+  max-width: 800px;
+  margin: auto;
+  border: 1px solid #00aa44;
+  padding: 15px;
+}
+
+#header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ascii-logo {
+  color: #00ff66;
+  text-shadow: 0 0 6px #00ff66, 0 0 10px #00ff66;
+  font-family: "Consolas", monospace;
+  margin: 0;
+  line-height: 1;
+  font-size: 18px;
+}
+
+
+.view {
+  margin-top: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.line {
+  margin-top: 8px;
+}
+
+input {
+  width: 100%;
+  background: black;
+  color: #00ff66;
+  border: 1px solid #00aa44;
+  font-family: inherit;
+  padding: 6px;
+  margin-bottom: 8px;
+  box-sizing: border-box; /* ensures border is included in width */
+}
+
+button {
+  background: black;
+  color: #00ff66;
+  border: 1px solid #00aa44;
+  font-family: inherit;
+  padding: 8px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+button:hover {
+  background: #00aa44;
+  color: black;
+}
+
+#menu {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#error, .error {
+  color: #ff5555;
+  margin-top: 5px;
+}
+
+/* --- Form Inputs & Buttons Alignment --- */
+#activityForm input,
+#profileForm input {
+  display: block;
+  width: 100%;        /* full width of the terminal */
+  padding: 6px;
+  margin-bottom: 8px; /* space between fields */
+  box-sizing: border-box;
+}
+
+#activityForm button,
+#profileForm button {
+  margin-right: 5px;
+  margin-bottom: 8px;
+  padding: 8px;
+  width: auto;        /* buttons keep natural width */
+}
+
+/* --- Add spacing between menu buttons and screen content --- */
+#screen {
+  margin-top: 15px;      /* space below menu buttons */
+  padding-left: 5px;     /* optional slight indent for terminal feel */
+  white-space: pre-wrap;  /* preserve line breaks */
+}
