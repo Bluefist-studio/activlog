@@ -48,8 +48,10 @@ function save() {
 
 /* HELPERS */
 function currentUser() {
-  return store.users.find(u => u.id === store.session.userId);
+  // Firebase user id is stored in store.session.userId
+  return { id: store.session.userId, username: store.session.username || "UNKNOWN" };
 }
+
 
 function print(text = "") {
   screen.innerHTML = text.replace(/\n/g, "<br>");
@@ -91,10 +93,10 @@ function showProfileForm() {
   screen.textContent = "";
   profileForm.classList.remove("hidden");
 
-  const user = currentUser();
-  profileUsername.value = user.username;
-  profilePin.value = user.pin;
+  profileUsername.value = store.session.username || "";
+  profilePin.value = ""; // do not display pin
 }
+
 
 function drawHome() {
   screen.textContent = "";
@@ -117,6 +119,7 @@ loginBtn.addEventListener("click", () => {
   auth.signInWithEmailAndPassword(email, pin)
     .then(userCred => {
       store.session.userId = userCred.user.uid;
+      store.session.username = username;
       save();
 
       loginError.textContent = "";
@@ -178,15 +181,21 @@ menu.addEventListener("click", e => {
     case "stats": showStatistics(); store.switchConfirm = false; break;
     case "switch":
       if(store.switchConfirm) {
-        store.session.userId=null;
         store.switchConfirm = false;
-        save();
-        showLogin();
+    
+        auth.signOut().finally(() => {
+          store.session.userId = null;
+          store.session.username = null;
+          save();
+          showLogin();
+        });
+    
       } else {
         store.switchConfirm = true;
         print("Press 'Switch User' again to confirm logout.");
       }
       break;
+
   }
 });
 
@@ -215,24 +224,7 @@ addActivityBtn.addEventListener("click", () => {
 cancelActivityBtn.addEventListener("click", hideAllForms);
 
 /* PROFILE SAVE */
-saveProfileBtn.addEventListener("click", () => {
-  const user = currentUser();
-  const username = profileUsername.value.trim();
-  const pin = profilePin.value.trim();
-
-  if(!username || !pin) return alert("Fill both fields");
-
-  if(store.users.some(u=>u.username===username && u.id!==user.id)) {
-    alert("Username exists"); return;
-  }
-
-  user.username = username;
-  user.pin = pin;
-  save();
-  alert("Profile updated!");
-  hideAllForms();
-  drawHome();
-});
+saveProfileBtn.addEventListener
 
 /* DELETE ACTIVITY */
 deleteBtn.addEventListener("click", () => {
@@ -326,5 +318,20 @@ function showLogin() {
   loginUser.focus();
 }
 
-store.session.userId ? showApp(true) : showLogin();
+auth.onAuthStateChanged((user) => {
+  if(user) {
+    store.session.userId = user.uid;
+    // keep previous username if we have it; otherwise show placeholder
+    store.session.username = store.session.username || "USER";
+    save();
+    showApp(true);
+  } else {
+    store.session.userId = null;
+    store.session.username = null;
+    save();
+    showLogin();
+  }
+});
+
+
 
