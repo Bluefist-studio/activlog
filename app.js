@@ -493,30 +493,63 @@ async function showHistory() {
 }
 
 
-function showStatistics() {
+async function showStatistics() {
   hideAllForms();
-  const userActivities = store.activities.filter(a => a.userId === store.session.userId);
   screen.textContent = "";
 
-  if (!userActivities.length) {
-    print("No activities to show statistics.");
-    return;
+  const uid = store.session.userId;
+  if (!uid) { print("NOT LOGGED IN."); return; }
+
+  try {
+    const snap = await db
+      .collection("users").doc(uid)
+      .collection("activities")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (!list.length) {
+      print("No activities to show statistics.");
+      return;
+    }
+
+    // Totals by activity type
+    const totals = {}; // { type: { minutes: number, distance: number } }
+
+    for (const a of list) {
+      const type = (a.type || "").trim();
+      if (!type) continue;
+
+      if (!totals[type]) totals[type] = { minutes: 0, distance: 0 };
+
+      totals[type].minutes += Number(a.duration || 0);
+
+      // distance optional
+      if (a.distance != null && a.distance !== "") {
+        totals[type].distance += Number(a.distance || 0);
+      }
+    }
+
+    // Sort by minutes descending
+    const rows = Object.entries(totals)
+      .sort(([,A], [,B]) => B.minutes - A.minutes);
+
+    const lines = ["--- STATISTICS ---", "TYPE | MINUTES | DIST", ""];
+
+    for (const [type, t] of rows) {
+      const distStr = t.distance ? t.distance.toFixed(2) : "-";
+      lines.push(`${type} | ${t.minutes} | ${distStr}`);
+    }
+
+    print(lines.join("\n"));
+
+  } catch (err) {
+    console.error(err);
+    print(`STATS FAILED: ${err.code || ""} ${err.message || err}`);
   }
-
-  const totals = {};
-  userActivities.forEach(a => {
-    const key = (a.type || "").trim();
-    if (!totals[key]) totals[key] = 0;
-    totals[key] += a.duration;
-  });
-
-  const lines = ["--- STATISTICS ---"];
-  for (const [type, mins] of Object.entries(totals)) {
-    lines.push(`${type} : ${mins} min`);
-  }
-
-  print(lines.join("\n"));
 }
+
 
 /* BOOT */
 auth.onAuthStateChanged(async (user) => {
@@ -537,6 +570,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
