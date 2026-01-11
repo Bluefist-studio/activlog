@@ -148,6 +148,7 @@ createBtn.addEventListener("click", () => {
   auth.createUserWithEmailAndPassword(email, pin)
     .then(userCred => {
       store.session.userId = userCred.user.uid;
+      store.session.username = username;
       save();
 
       loginError.textContent = "";
@@ -224,7 +225,42 @@ addActivityBtn.addEventListener("click", () => {
 cancelActivityBtn.addEventListener("click", hideAllForms);
 
 /* PROFILE SAVE */
-saveProfileBtn.addEventListener
+saveProfileBtn.addEventListener("click", () => {
+  const username = profileUsername.value.trim();
+  const newPin = profilePin.value.trim();
+
+  // Username is required, PIN is optional
+  if (!username) {
+    print("USERNAME REQUIRED.");
+    return;
+  }
+
+  // Save display name locally
+  store.session.username = username;
+  save();
+
+  // If PIN is blank, we ONLY update username display
+  if (!newPin) {
+    print("PROFILE UPDATED.");
+    hideAllForms();
+    drawHome();
+    return;
+  }
+
+  // If PIN provided, attempt to update Firebase password
+  auth.currentUser.updatePassword(newPin)
+    .then(() => {
+      print("PROFILE UPDATED.");
+      hideAllForms();
+      drawHome();
+    })
+    .catch(() => {
+      print("USERNAME UPDATED.\nPIN CHANGE REQUIRES RE-LOGIN.");
+      hideAllForms();
+      drawHome();
+    });
+});
+
 
 /* DELETE ACTIVITY */
 deleteBtn.addEventListener("click", () => {
@@ -332,6 +368,7 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
+
 
 
 
