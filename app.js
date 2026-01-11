@@ -34,6 +34,8 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 const editIndex = document.getElementById("editIndex");
 const editBtn = document.getElementById("editBtn");
 
+const deleteActivityBtn = document.getElementById("deleteActivityBtn");
+
 /* STORAGE */
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
@@ -87,6 +89,35 @@ function activitiesRef(uid) {
   return db.collection("users").doc(uid).collection("activities");
 }
 
+if (deleteActivityBtn) {
+  deleteActivityBtn.addEventListener("click", async () => {
+    const uid = store.session.userId;
+    const a = store.editingActivity;
+
+    if (!uid) { print("NOT LOGGED IN."); return; }
+    if (!a || !a.id) { print("NOTHING TO DELETE."); return; }
+
+    try {
+      await activitiesRef(uid).doc(a.id).delete();
+
+      // reset edit mode
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
+      deleteActivityBtn.classList.add("hidden");
+
+      hideAllForms();
+      print("Activity deleted.");
+
+      await showHistory(); // refresh list
+
+    } catch (err) {
+      console.error(err);
+      print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
+    }
+  });
+}
+
+
 /* VIEWS */
 function hideAllForms() {
   activityForm.classList.add("hidden");
@@ -122,7 +153,12 @@ function showActivityForm() {
   screen.textContent = "";
   activityForm.classList.remove("hidden");
 
-  // If NOT editing, clear inputs.
+ // If we are NOT editing, hide delete + set label
+  if (!store.editingActivity) {
+    if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
+    addActivityBtn.textContent = "Add Activity";
+  }
+
   // If editing, we'll fill them from editBtn handler.
   if (!store.editingActivity) {
     activityType.value = "";
@@ -369,8 +405,10 @@ addActivityBtn.addEventListener("click", async () => {
 cancelActivityBtn.addEventListener("click", () => {
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
+  if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
   hideAllForms();
 });
+
 
 /* PROFILE SAVE (PIN change only) */
 saveProfileBtn.addEventListener("click", () => {
@@ -440,6 +478,10 @@ editBtn.addEventListener("click", () => {
 
   const a = list[idx];
   store.editingActivity = a;
+  deleteActivityBtn.classList.remove("hidden");
+
+  if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
+  addActivityBtn.textContent = "Save Changes";
 
   showActivityForm();
 
@@ -470,7 +512,6 @@ async function showHistory() {
       .get();
 
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    store.currentDisplayList = list;
 
     if (!list.length) {
       print("No history.");
@@ -480,6 +521,10 @@ async function showHistory() {
 
     const todayList = list.filter(a => a.date === today);
     const pastList = list.filter(a => a.date !== today);
+
+    const displayList = [...todayList, ...pastList];
+    store.currentDisplayList = displayList;
+
 
     const lines = [];
 
@@ -595,3 +640,4 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
