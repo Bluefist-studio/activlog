@@ -36,7 +36,7 @@ const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
   activities: JSON.parse(localStorage.getItem("activities")) || [],
   switchConfirm: false,
-  currentDisplayList: []
+  currentDisplayList: [],
   authBusy: false,
   pendingLoginError: ""
 };
@@ -229,10 +229,11 @@ createBtn.addEventListener("click", () => {
         console.error(e);
 
         if (e?.message === "USERNAME_TAKEN") {
-          loginError.textContent = "USERNAME TAKEN";
+          store.pendingLoginError = "USERNAME TAKEN";
         } else {
-          loginError.textContent = `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
+          store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
         }
+
 
 
         // Attempt to delete auth account created moments ago
@@ -244,8 +245,11 @@ createBtn.addEventListener("click", () => {
         try { await auth.signOut(); } catch (_) {}
         store.session.userId = null;
         store.session.username = null;
-        store.pendingLoginError = "USERNAME TAKEN";
-        store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
+        if (e?.message === "USERNAME_TAKEN") {
+          store.pendingLoginError = "USERNAME TAKEN";
+        } else {
+          store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
+        }
         save();
         store.authBusy = false;
         showLogin();
@@ -253,6 +257,7 @@ createBtn.addEventListener("click", () => {
     })
     .catch(err => {
       console.error(err);
+      store.authBusy = false;
       loginError.textContent = `${err.code || "ERROR"}: ${err.message || "CREATE FAILED"}`;
     });
 });
@@ -453,6 +458,7 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
+
 
 
 
