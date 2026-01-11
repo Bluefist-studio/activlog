@@ -87,33 +87,6 @@ function activitiesRef(uid) {
   return db.collection("users").doc(uid).collection("activities");
 }
 
-if (deleteActivityBtn) {
-  deleteActivityBtn.addEventListener("click", async () => {
-    const uid = store.session.userId;
-    const a = store.editingActivity;
-
-    if (!uid) { print("NOT LOGGED IN."); return; }
-    if (!a || !a.id) { print("NOTHING TO DELETE."); return; }
-
-    try {
-      await activitiesRef(uid).doc(a.id).delete();
-
-      // reset edit mode
-      store.editingActivity: null;
-      addActivityBtn.textContent = "Add Activity";
-      deleteActivityBtn.classList.add("hidden");
-
-      hideAllForms();
-      print("Activity deleted.");
-
-      await showHistory(); // refresh list
-
-    } catch (err) {
-      console.error(err);
-      print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
-    }
-  });
-}
 
 
 /* VIEWS */
@@ -131,7 +104,7 @@ function showLogin() {
   store.pendingLoginError = "";
 
   // reset edit mode if any
-  store.editingActivity: null;
+  store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
 
   loginEmail.focus();
@@ -302,7 +275,7 @@ menu.addEventListener("click", e => {
 
   switch (e.target.dataset.action) {
     case "log":
-      store.editingActivity: null;
+      store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
       showActivityForm();
       store.switchConfirm = false;
@@ -372,7 +345,7 @@ addActivityBtn.addEventListener("click", async () => {
       // UPDATE
       await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
 
-      store.editingActivity: null;
+      store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
 
       hideAllForms();
@@ -401,7 +374,7 @@ addActivityBtn.addEventListener("click", async () => {
 });
 
 cancelActivityBtn.addEventListener("click", () => {
-  store.editingActivity: null;
+  store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
   if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
   hideAllForms();
@@ -452,10 +425,7 @@ editBtn.addEventListener("click", () => {
   store.editingActivity = a;
 
   // show delete option only in edit mode
-  let deleteHtml = `
-    <button id="editDeleteBtn">Delete Activity</button>
-    <button id="editCancelBtn">Cancel</button>
-  `;
+  let deleteHtml = ``;
   screen.insertAdjacentHTML("beforeend", deleteHtml);
 
   document.getElementById("editDeleteBtn").onclick = async () => {
@@ -469,7 +439,7 @@ editBtn.addEventListener("click", () => {
       .doc(store.editingActivity.id)
       .delete();
 
-    store.editingActivity: null;
+    store.editingActivity = null;
     addActivityBtn.textContent = "Add Activity";
     await showHistory();
   } catch (err) {
@@ -479,7 +449,7 @@ editBtn.addEventListener("click", () => {
 };
 
 document.getElementById("editCancelBtn").onclick = () => {
-  store.editingActivity: null;
+  store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
   showHistory();
 };
@@ -511,7 +481,7 @@ if (deleteActivityBtn) {
     try {
       await activitiesRef(uid).doc(a.id).delete();
 
-      store.editingActivity: null;
+      store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
       deleteActivityBtn.classList.add("hidden");
 
@@ -525,7 +495,6 @@ if (deleteActivityBtn) {
     }
   });
 }
-
 
 
 /* DISPLAY: HISTORY (TODAY + PAST) */
@@ -672,6 +641,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
