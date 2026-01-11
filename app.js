@@ -441,28 +441,6 @@ saveProfileBtn.addEventListener("click", () => {
     });
 });
 
-/* DELETE ACTIVITY (Firestore) */
-deleteBtn.addEventListener("click", async () => {
-  const idx = Number(deleteIndex.value) - 1;
-  const list = store.currentDisplayList || [];
-
-  if (idx < 0 || idx >= list.length) { print("Invalid activity number."); return; }
-
-  const uid = store.session.userId;
-  if (!uid) { print("NOT LOGGED IN."); return; }
-
-  const docId = list[idx].id;
-
-  try {
-    await activitiesRef(uid).doc(docId).delete();
-    deleteIndex.value = "";
-    await showHistory();
-  } catch (err) {
-    console.error(err);
-    print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
-  }
-});
-
 cancelDeleteBtn.addEventListener("click", () => {
   deleteForm.classList.add("hidden");
 });
@@ -476,6 +454,40 @@ editBtn.addEventListener("click", () => {
 
   const a = list[idx];
   store.editingActivity = a;
+
+  // show delete option only in edit mode
+  let deleteHtml = `
+    <button id="editDeleteBtn">Delete Activity</button>
+    <button id="editCancelBtn">Cancel</button>
+  `;
+  screen.insertAdjacentHTML("beforeend", deleteHtml);
+
+  document.getElementById("editDeleteBtn").onclick = async () => {
+  const uid = store.session.userId;
+  if (!uid || !store.editingActivity) return;
+
+  try {
+    await db
+      .collection("users").doc(uid)
+      .collection("activities")
+      .doc(store.editingActivity.id)
+      .delete();
+
+    store.editingActivity = null;
+    addActivityBtn.textContent = "Add Activity";
+    await showHistory();
+  } catch (err) {
+    console.error(err);
+    print("DELETE FAILED");
+  }
+};
+
+document.getElementById("editCancelBtn").onclick = () => {
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
+  showHistory();
+};
+
 
   showActivityForm();
 
@@ -667,5 +679,6 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
