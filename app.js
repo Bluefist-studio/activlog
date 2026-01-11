@@ -231,7 +231,7 @@ createBtn.addEventListener("click", () => {
         if (e?.message === "USERNAME_TAKEN") {
           store.pendingLoginError = "USERNAME TAKEN";
         } else {
-          store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
+          store.pendingLoginError = `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
         }
 
 
@@ -245,11 +245,6 @@ createBtn.addEventListener("click", () => {
         try { await auth.signOut(); } catch (_) {}
         store.session.userId = null;
         store.session.username = null;
-        if (e?.message === "USERNAME_TAKEN") {
-          store.pendingLoginError = "USERNAME TAKEN";
-        } else {
-          store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
-        }
         save();
         store.authBusy = false;
         showLogin();
@@ -443,12 +438,15 @@ function showStatistics() {
 }
 
 /* BOOT */
-auth.onAuthStateChanged((user) => {
-  if (store.authBusy) return; // prevent UI flicker during create/delete/signout
+auth.onAuthStateChanged(async (user) => {
+  if (store.authBusy) return;
 
-  if(user) {
+  if (user) {
     store.session.userId = user.uid;
-    store.session.username = store.session.username || "USER";
+
+    const uname = await loadUsernameForUid(user.uid);
+    store.session.username = uname || store.session.username || "USER";
+
     save();
     showApp(true);
   } else {
@@ -458,6 +456,8 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
+
+
 
 
 
