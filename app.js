@@ -416,6 +416,16 @@ saveProfileBtn.addEventListener("click", () => {
 
 /* EDIT ACTIVITY (open form prefilled) */
 editBtn.addEventListener("click", () => {
+    // --- DEBUG GUARD ---
+  if (!activityForm || !activityType || !activityDuration || !activityDate || !activityNotes || !addActivityBtn) {
+    console.error("EDIT FAIL: missing form element", {
+      activityForm, activityType, activityDuration, activityDate, activityNotes, addActivityBtn
+    });
+    print("EDIT FAIL: FORM ELEMENT MISSING (CHECK HTML IDS).");
+    return;
+  }
+
+  
   const idx = Number(editIndex.value) - 1;
   const list = store.currentDisplayList || [];
 
@@ -613,6 +623,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
