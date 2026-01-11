@@ -196,6 +196,18 @@ loginBtn.addEventListener("click", () => {
     });
 });
 
+function handleLoginKey(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    loginBtn.click();
+  }
+}
+
+loginEmail.addEventListener("keydown", handleLoginKey);
+loginPin.addEventListener("keydown", handleLoginKey);
+loginUser.addEventListener("keydown", handleLoginKey);
+
+
 /* CREATE USER (unique username enforced) */
 createBtn.addEventListener("click", () => {
   const rawUsername = (loginUser.value || "").trim();
@@ -637,6 +649,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
