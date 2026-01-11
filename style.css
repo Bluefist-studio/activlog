@@ -13,6 +13,8 @@ body {
 }
 
 #header {
+  padding-top: 12px;   /* space above logo */
+  padding-bottom: 12px;
   text-align: center;
   margin-bottom: 10px;
 }
@@ -101,3 +103,4 @@ button:hover {
   padding-left: 5px;     /* optional slight indent for terminal feel */
   white-space: pre-wrap;  /* preserve line breaks */
 }
+
