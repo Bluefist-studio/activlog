@@ -133,17 +133,44 @@ input::selection {
   color: #00ff66;
 }
 
-/* ---------- MOBILE ---------- */
-@media (max-width: 480px) {
+/* --- Mobile scaling --- */
+@media (max-width: 600px) {
   body {
+    padding: 10px;
+  }
+
+  #terminal {
+    max-width: none;
+    width: 100%;
     padding: 12px;
   }
 
+  /* Bigger tap targets + readable text */
+  input,
+  button {
+    font-size: 18px;
+    padding: 12px;
+  }
+
+  .line {
+    font-size: 18px;
+  }
+
+  #screen {
+    font-size: 18px;
+    line-height: 1.35;
+    padding-left: 0;
+  }
+
   #menu {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr;  /* one column menu on phone */
+    gap: 10px;
   }
 
   .ascii-logo {
-    font-size: 12px;
+    font-size: 14px;
+    white-space: pre-wrap;
   }
 }
+
+
