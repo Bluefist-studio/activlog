@@ -2,6 +2,7 @@
 const loginView = document.getElementById("loginView");
 const appView = document.getElementById("appView");
 const loginUser = document.getElementById("loginUser");
+const loginEmail = document.getElementById("loginEmail");
 const loginPin = document.getElementById("loginPin");
 const loginBtn = document.getElementById("loginBtn");
 const createBtn = document.getElementById("createBtn");
@@ -35,15 +36,6 @@ const store = {
   switchConfirm: false,
   currentDisplayList: []
 };
-
-function usernameToEmail(username) {
-  return `${username.toLowerCase()}@activlog.local`;
-}
-
-function normalizeUsername(username) {
-  return username.trim().toLowerCase().replace(/\s+/g, "");
-}
-
 
 function save() {
   localStorage.setItem("users", JSON.stringify(store.users));
@@ -111,47 +103,48 @@ function drawHome() {
 
 /* LOGIN & CREATE USER */
 loginBtn.addEventListener("click", () => {
-  const username = normalizeUsername(loginUser.value);
+  const username = loginUser.value.trim();
+  const email = (loginEmail.value || "").trim();
   const pin = loginPin.value.trim();
-  const email = usernameToEmail(username);
 
-  if (!username || !pin) {
-    loginError.textContent = "ENTER USERNAME AND PIN";
+  if (!email || !pin) {
+    loginError.textContent = "ENTER EMAIL AND PIN";
     return;
   }
-
-  const email = usernameToEmail(username);
 
   auth.signInWithEmailAndPassword(email, pin)
     .then(userCred => {
       store.session.userId = userCred.user.uid;
-      store.session.username = username;
+
+      // Keep a local display name (can be edited in Profile)
+      store.session.username = username || store.session.username || "USER";
+
       save();
 
       loginError.textContent = "";
       loginUser.value = "";
+      loginEmail.value = "";
       loginPin.value = "";
 
-      showApp(true); // show Add Activity on login
+      showApp(true);
     })
     .catch(err => {
-      loginError.textContent = "INVALID LOGIN";
+      console.error(err);
+      loginError.textContent = `${err.code || "ERROR"}: ${err.message || "LOGIN FAILED"}`;
     });
 });
 
 
+
 createBtn.addEventListener("click", () => {
-  const username = normalizeUsername(loginUser.value);
+  const username = loginUser.value.trim();
+  const email = (loginEmail.value || "").trim();
   const pin = loginPin.value.trim();
-  const email = usernameToEmail(username);
 
-
-  if (!username || !pin) {
-    loginError.textContent = "ENTER USERNAME AND PIN";
+  if (!username || !email || !pin) {
+    loginError.textContent = "ENTER USERNAME, EMAIL, AND PIN";
     return;
   }
-
-  const email = usernameToEmail(username);
 
   auth.createUserWithEmailAndPassword(email, pin)
     .then(userCred => {
@@ -161,18 +154,17 @@ createBtn.addEventListener("click", () => {
 
       loginError.textContent = "";
       loginUser.value = "";
+      loginEmail.value = "";
       loginPin.value = "";
 
       showApp(true);
     })
     .catch(err => {
-      if (err.code === "auth/email-already-in-use") {
-        loginError.textContent = "USER EXISTS";
-      } else {
-        loginError.textContent = "CREATE FAILED";
-      }
+      console.error(err);
+      loginError.textContent = `${err.code || "ERROR"}: ${err.message || "CREATE FAILED"}`;
     });
 });
+
 
 
 /* MENU */
@@ -359,7 +351,7 @@ function showStatistics() {
 function showLogin() {
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
-  loginUser.focus();
+  loginEmail.focus();
 }
 
 auth.onAuthStateChanged((user) => {
@@ -376,6 +368,7 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
+
 
 
 
