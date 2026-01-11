@@ -38,12 +38,33 @@
 
     <div id="menu">
       <button data-action="log"> Log Activity</button>
+      <button data-action="friends"> Friends</button>
       <button data-action="today"> Today</button>
       <button data-action="history"> History</button>
       <button data-action="profile"> Profile</button>
       <button data-action="stats"> Statistics</button>
       <button data-action="switch"> Switch User</button>
     </div>
+
+    <div id="friendsView" class="view hidden">
+
+  <div class="line">FRIENDS:</div>
+  <div id="friendsList"></div>
+
+  <div class="line" style="margin-top:12px;">ADD FRIEND (USERNAME):</div>
+  <input id="friendSearch" autocomplete="off">
+  <button id="addFriendBtn">Add Friend</button>
+
+  <div class="line" style="margin-top:12px;">VIEW:</div>
+  <div id="friendTabs">
+    <button data-ftab="today">Today</button>
+    <button data-ftab="history">History</button>
+    <button data-ftab="stats">Stats</button>
+  </div>
+
+  <div id="friendScreen" style="margin-top:12px;"></div>
+</div>
+
 
     <div id="screen"></div>
 
@@ -117,6 +138,7 @@
 <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
