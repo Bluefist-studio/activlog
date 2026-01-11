@@ -199,6 +199,8 @@ createBtn.addEventListener("click", () => {
           });
         });
 
+        print("USERNAME CLAIMED.\nPROFILE SAVED.");
+
         // Success
         store.session.userId = uid;
         store.session.username = username;
@@ -218,8 +220,9 @@ createBtn.addEventListener("click", () => {
         if (e?.message === "USERNAME_TAKEN") {
           loginError.textContent = "USERNAME TAKEN";
         } else {
-          loginError.textContent = "CREATE FAILED (DB)";
+          loginError.textContent = `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
         }
+
 
         // Attempt to delete auth account created moments ago
         try {
@@ -437,3 +440,4 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
