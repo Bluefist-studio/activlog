@@ -270,7 +270,6 @@ menu.addEventListener("click", e => {
 
   switch (e.target.dataset.action) {
     case "log": showActivityForm(); store.switchConfirm = false; break;
-    case "today": showToday(); store.switchConfirm = false; break;
     case "history": showHistory(); store.switchConfirm = false; break;
     case "profile": showProfileForm(); store.switchConfirm = false; break;
     case "stats": showStatistics(); store.switchConfirm = false; break;
@@ -456,6 +455,8 @@ async function showHistory() {
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
 
+  const today = new Date().toISOString().slice(0, 10);
+
   try {
     const snap = await db
       .collection("users").doc(uid)
@@ -472,15 +473,42 @@ async function showHistory() {
       return;
     }
 
-    const output = list.map((a, i) => {
-      const dist = (a.distance != null) ? ` | ${a.distance}` : "";
-      const notes = a.notes ? ` (${a.notes})` : "";
-      return `${i + 1}. ${a.date} | ${a.type} | ${a.duration} min${dist}${notes}`;
-    }).join("\n");
+    const todayList = list.filter(a => a.date === today);
+    const pastList  = list.filter(a => a.date !== today);
 
-    print(output + "\n");
+    const lines = [];
 
-    // show delete form within history
+    // TODAY section
+    lines.push("--- TODAY ---");
+    if (todayList.length) {
+      todayList.forEach((a, i) => {
+        const num = i + 1; // numbering continues below
+        const dist = (a.distance != null) ? ` | ${a.distance}` : "";
+        const notes = a.notes ? ` (${a.notes})` : "";
+        lines.push(`${num}. ${a.type} | ${a.duration} min${dist}${notes}`);
+      });
+    } else {
+      lines.push("(none)");
+    }
+
+    lines.push(""); // blank line
+
+    // PAST section (continue numbering)
+    lines.push("--- PAST ---");
+    if (pastList.length) {
+      pastList.forEach((a, i) => {
+        const num = todayList.length + i + 1;
+        const dist = (a.distance != null) ? ` | ${a.distance}` : "";
+        const notes = a.notes ? ` (${a.notes})` : "";
+        lines.push(`${num}. ${a.date} | ${a.type} | ${a.duration} min${dist}${notes}`);
+      });
+    } else {
+      lines.push("(none)");
+    }
+
+    print(lines.join("\n") + "\n");
+
+    // show delete form
     deleteForm.classList.remove("hidden");
     deleteIndex.value = "";
     deleteIndex.focus();
@@ -570,6 +598,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
