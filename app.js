@@ -27,8 +27,6 @@ const profilePin = document.getElementById("profilePin");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 
 const deleteForm = document.getElementById("deleteForm");
-const deleteIndex = document.getElementById("deleteIndex");
-const deleteBtn = document.getElementById("deleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 const editIndex = document.getElementById("editIndex");
@@ -478,10 +476,6 @@ editBtn.addEventListener("click", () => {
 
   const a = list[idx];
   store.editingActivity = a;
-  deleteActivityBtn.classList.remove("hidden");
-
-  if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
-  addActivityBtn.textContent = "Save Changes";
 
   showActivityForm();
 
@@ -494,7 +488,40 @@ editBtn.addEventListener("click", () => {
   if (distEl) distEl.value = (a.distance != null) ? a.distance : "";
 
   addActivityBtn.textContent = "Save Changes";
+  if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
 });
+
+cancelDeleteBtn.addEventListener("click", () => {
+  deleteForm.classList.add("hidden");
+});
+
+if (deleteActivityBtn) {
+  deleteActivityBtn.addEventListener("click", async () => {
+    const uid = store.session.userId;
+    const a = store.editingActivity;
+
+    if (!uid) { print("NOT LOGGED IN."); return; }
+    if (!a || !a.id) { print("NOTHING TO DELETE."); return; }
+
+    try {
+      await activitiesRef(uid).doc(a.id).delete();
+
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
+      deleteActivityBtn.classList.add("hidden");
+
+      hideAllForms();
+      print("Activity deleted.");
+      await showHistory();
+
+    } catch (err) {
+      console.error(err);
+      print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
+    }
+  });
+}
+
+
 
 /* DISPLAY: HISTORY (TODAY + PAST) */
 async function showHistory() {
@@ -558,9 +585,9 @@ async function showHistory() {
 
     // show tools
     deleteForm.classList.remove("hidden");
-    deleteIndex.value = "";
     editIndex.value = "";
-    deleteIndex.focus();
+    editIndex.focus();
+
 
   } catch (err) {
     console.error(err);
@@ -640,4 +667,5 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
