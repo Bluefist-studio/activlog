@@ -101,6 +101,13 @@ ActivLog
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
+  firebase.initializeApp(firebaseConfig);
+  window.auth = firebase.auth();
+  window.db = firebase.firestore();
+</script>
+
+
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyBe_0oWH02bKiXSpOz3IlHtYuJSbMesVz0",
     authDomain: "activlog-data.firebaseapp.com",
@@ -120,6 +127,7 @@ ActivLog
 <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
