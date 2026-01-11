@@ -37,6 +37,8 @@ const store = {
   activities: JSON.parse(localStorage.getItem("activities")) || [],
   switchConfirm: false,
   currentDisplayList: []
+  authBusy: false,
+  pendingLoginError: ""
 };
 
 function save() {
@@ -87,9 +89,14 @@ function hideAllForms() {
 function showLogin() {
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
-  loginError.textContent = "";
+
+  // show any pending auth/db error
+  loginError.textContent = store.pendingLoginError || "";
+  store.pendingLoginError = "";
+
   loginEmail.focus();
 }
+
 
 function showApp(showActivity = false) {
   loginView.classList.add("hidden");
@@ -173,6 +180,8 @@ createBtn.addEventListener("click", () => {
   if (v) { loginError.textContent = v; return; }
   if (!email || !pin) { loginError.textContent = "ENTER EMAIL AND PIN"; return; }
 
+  store.authBusy = true;
+  
   auth.createUserWithEmailAndPassword(email, pin)
     .then(async (userCred) => {
       const uid = userCred.user.uid;
@@ -211,6 +220,8 @@ createBtn.addEventListener("click", () => {
         loginEmail.value = "";
         loginPin.value = "";
 
+        store.authBusy = false;
+
         showApp(true);
 
       } catch (e) {
@@ -233,7 +244,10 @@ createBtn.addEventListener("click", () => {
         try { await auth.signOut(); } catch (_) {}
         store.session.userId = null;
         store.session.username = null;
+        store.pendingLoginError = "USERNAME TAKEN";
+        store.pendingLoginError = `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
         save();
+        store.authBusy = false;
         showLogin();
       }
     })
@@ -424,13 +438,12 @@ function showStatistics() {
 }
 
 /* BOOT */
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
+auth.onAuthStateChanged((user) => {
+  if (store.authBusy) return; // prevent UI flicker during create/delete/signout
+
+  if(user) {
     store.session.userId = user.uid;
-
-    const uname = await loadUsernameForUid(user.uid);
-    store.session.username = uname || store.session.username || "USER";
-
+    store.session.username = store.session.username || "USER";
     save();
     showApp(true);
   } else {
@@ -440,4 +453,6 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
+
 
