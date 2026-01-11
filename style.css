@@ -26,7 +26,7 @@ body {
   font-family: Consolas, monospace;
   margin: 0;
   line-height: 1;
-  font-size: 18px;
+  font-size: 30px;
 }
 
 .view {
@@ -172,5 +172,6 @@ input::selection {
     white-space: pre-wrap;
   }
 }
+
 
 
