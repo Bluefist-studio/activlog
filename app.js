@@ -375,11 +375,33 @@ deleteBtn.addEventListener("click", () => {
   if (idx < 0 || idx >= list.length) return print("Invalid activity number.");
 
   const idToDelete = list[idx].id;
-  store.activities = store.activities.filter(a => a.id !== idToDelete);
-  save();
+  
+deleteBtn.addEventListener("click", async () => {
+  const idx = Number(deleteIndex.value) - 1;
+  const list = store.currentDisplayList || [];
 
-  deleteIndex.value = "";
-  showHistory();
+  if (idx < 0 || idx >= list.length) { print("Invalid activity number."); return; }
+
+  const uid = store.session.userId;
+  if (!uid) { print("NOT LOGGED IN."); return; }
+
+  const docId = list[idx].id;
+
+  try {
+    await db
+      .collection("users").doc(uid)
+      .collection("activities").doc(docId)
+      .delete();
+
+    deleteIndex.value = "";
+    await showHistory(); // refresh
+
+  } catch (err) {
+    console.error(err);
+    print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
+  }
+});
+
 });
 
 cancelDeleteBtn.addEventListener("click", () => {
@@ -427,30 +449,49 @@ async function showToday() {
 }
 
 
-function showHistory() {
+async function showHistory() {
   hideAllForms();
   screen.textContent = "";
 
-  const list = store.activities.filter(a => a.userId === store.session.userId);
+  const uid = store.session.userId;
+  if (!uid) { print("NOT LOGGED IN."); return; }
 
-  if (list.length) {
-    const output = list.map((a, i) =>
-      `${i + 1}. ${a.date} | ${a.type} | ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`
-    ).join("\n");
+  try {
+    const snap = await db
+      .collection("users").doc(uid)
+      .collection("activities")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    store.currentDisplayList = list;
+
+    if (!list.length) {
+      print("No history.");
+      deleteForm.classList.add("hidden");
+      return;
+    }
+
+    const output = list.map((a, i) => {
+      const dist = (a.distance != null) ? ` | ${a.distance}` : "";
+      const notes = a.notes ? ` (${a.notes})` : "";
+      return `${i + 1}. ${a.date} | ${a.type} | ${a.duration} min${dist}${notes}`;
+    }).join("\n");
 
     print(output + "\n");
 
+    // show delete form within history
     deleteForm.classList.remove("hidden");
     deleteIndex.value = "";
     deleteIndex.focus();
 
-    store.currentDisplayList = list;
-  } else {
-    print("No history.");
-    store.currentDisplayList = [];
+  } catch (err) {
+    console.error(err);
+    print(`LOAD FAILED: ${err.code || ""} ${err.message || err}`);
     deleteForm.classList.add("hidden");
   }
 }
+
 
 function showStatistics() {
   hideAllForms();
@@ -496,6 +537,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
