@@ -387,24 +387,45 @@ cancelDeleteBtn.addEventListener("click", () => {
 });
 
 /* DISPLAY FUNCTIONS */
-function showToday() {
+async function showToday() {
   hideAllForms();
+  screen.textContent = "";
+
+  const uid = store.session.userId;
+  if (!uid) { print("NOT LOGGED IN."); return; }
+
   const today = new Date().toISOString().slice(0, 10);
-  const list = store.activities.filter(a => a.userId === store.session.userId && a.date === today);
 
-  if (list.length) {
-    const output = list.map((a, i) =>
-      `${i + 1}. ${a.type} - ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`
-    ).join("\n");
-    print(output);
+  try {
+    const snap = await db
+      .collection("users").doc(uid)
+      .collection("activities")
+      .where("date", "==", today)
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     store.currentDisplayList = list;
-  } else {
-    print("No activities today.");
-    store.currentDisplayList = [];
-  }
 
-  deleteForm.classList.add("hidden");
+    if (!list.length) {
+      print("No activities today.");
+      return;
+    }
+
+    const output = list.map((a, i) => {
+      const dist = (a.distance != null) ? ` | ${a.distance}` : "";
+      const notes = a.notes ? ` (${a.notes})` : "";
+      return `${i + 1}. ${a.type} - ${a.duration} min${dist}${notes}`;
+    }).join("\n");
+
+    print(output);
+
+  } catch (err) {
+    console.error(err);
+    print(`LOAD FAILED: ${err.code || ""} ${err.message || err}`);
+  }
 }
+
 
 function showHistory() {
   hideAllForms();
@@ -475,6 +496,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
