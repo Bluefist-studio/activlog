@@ -128,6 +128,11 @@ function showActivityForm() {
   if (!store.editingActivity) {
     if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
     addActivityBtn.textContent = "Add Activity";
+
+    if (!store.editingActivity && deleteActivityBtn) {
+    deleteActivityBtn.classList.add("hidden");
+  }
+
   }
 
   // If editing, we'll fill them from editBtn handler.
@@ -449,6 +454,8 @@ editBtn.addEventListener("click", () => {
 
   addActivityBtn.textContent = "Save Changes";
   if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
+
+  
 });
 
 
@@ -623,6 +630,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
