@@ -36,6 +36,10 @@ const store = {
   currentDisplayList: []
 };
 
+function usernameToEmail(username) {
+  return `${username.toLowerCase()}@activlog.local`;
+}
+
 function save() {
   localStorage.setItem("users", JSON.stringify(store.users));
   localStorage.setItem("session", JSON.stringify(store.session));
@@ -100,35 +104,64 @@ function drawHome() {
 
 /* LOGIN & CREATE USER */
 loginBtn.addEventListener("click", () => {
-  const user = store.users.find(u => u.username === loginUser.value && u.pin === loginPin.value);
-  if(!user) { loginError.textContent="INVALID LOGIN"; return; }
+  const username = loginUser.value.trim();
+  const pin = loginPin.value.trim();
 
-  store.session.userId = user.id;
-  store.switchConfirm = false;
-  save();
-  loginError.textContent="";
-  loginUser.value=""; loginPin.value="";
+  if (!username || !pin) {
+    loginError.textContent = "ENTER USERNAME AND PIN";
+    return;
+  }
 
-  showApp(true); // show Add Activity after login
+  const email = usernameToEmail(username);
+
+  auth.signInWithEmailAndPassword(email, pin)
+    .then(userCred => {
+      store.session.userId = userCred.user.uid;
+      save();
+
+      loginError.textContent = "";
+      loginUser.value = "";
+      loginPin.value = "";
+
+      showApp(true); // show Add Activity on login
+    })
+    .catch(err => {
+      loginError.textContent = "INVALID LOGIN";
+    });
 });
+
 
 createBtn.addEventListener("click", () => {
   const username = loginUser.value.trim();
   const pin = loginPin.value.trim();
 
-  if(!username || !pin) { loginError.textContent="Enter username and PIN"; return; }
-  if(store.users.some(u => u.username===username)) { loginError.textContent="User exists"; return; }
+  if (!username || !pin) {
+    loginError.textContent = "ENTER USERNAME AND PIN";
+    return;
+  }
 
-  const newUser = { id: Date.now().toString(), username, pin };
-  store.users.push(newUser);
-  store.session.userId = newUser.id;
-  store.switchConfirm = false;
-  save();
-  loginError.textContent="";
-  loginUser.value=""; loginPin.value="";
+  const email = usernameToEmail(username);
 
-  showApp(true);
+  auth.createUserWithEmailAndPassword(email, pin)
+    .then(userCred => {
+      store.session.userId = userCred.user.uid;
+      save();
+
+      loginError.textContent = "";
+      loginUser.value = "";
+      loginPin.value = "";
+
+      showApp(true);
+    })
+    .catch(err => {
+      if (err.code === "auth/email-already-in-use") {
+        loginError.textContent = "USER EXISTS";
+      } else {
+        loginError.textContent = "CREATE FAILED";
+      }
+    });
 });
+
 
 /* MENU */
 menu.addEventListener("click", e => {
@@ -293,9 +326,5 @@ function showLogin() {
   loginUser.focus();
 }
 
-if(!store.users.length) { 
-  store.users.push({id:"u1",username:"admin",pin:"2414"}); 
-  save(); 
-}
-
 store.session.userId ? showApp(true) : showLogin();
+
