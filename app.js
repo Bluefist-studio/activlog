@@ -107,7 +107,6 @@ function showLogin() {
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
 
-  loginEmail.focus();
 }
 
 function showApp(showActivity = false) {
@@ -149,7 +148,6 @@ function showActivityForm() {
     addActivityBtn.textContent = "Add Activity";
   }
 
-  activityType.focus();
 }
 
 function showProfileForm() {
@@ -378,12 +376,22 @@ addActivityBtn.addEventListener("click", async () => {
   }
 });
 
-cancelActivityBtn.addEventListener("click", () => {
+cancelActivityBtn.addEventListener("click", async () => {
+  const wasEditing = !!store.editingActivity;
+
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
   if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
+
   hideAllForms();
+
+  if (wasEditing) {
+    await showHistory();   // go back to history if canceling an edit
+  } else {
+    drawHome();            // normal cancel from "Log Activity"
+  }
 });
+
 
 
 /* PROFILE SAVE (PIN change only) */
@@ -549,7 +557,6 @@ async function showHistory() {
     // show tools
     deleteForm.classList.remove("hidden");
     editIndex.value = "";
-    editIndex.focus();
 
 
   } catch (err) {
@@ -630,6 +637,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
