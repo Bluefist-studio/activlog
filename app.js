@@ -63,6 +63,10 @@ function normalizeUsername(name) {
     .replace(/[^a-z0-9_]/g, "");  // allow a-z 0-9 _
 }
 
+function activitiesRef(uid) {
+  return db.collection("users").doc(uid).collection("activities");
+}
+
 function validateUsername(name) {
   if (!name) return "USERNAME REQUIRED";
   if (name.length < 3) return "USERNAME TOO SHORT (MIN 3)";
@@ -298,18 +302,33 @@ addActivityBtn.addEventListener("click", () => {
 
   if (!type || !duration) return alert("Fill activity and minutes");
 
-  store.activities.push({
-    id: Date.now().toString(),
-    userId: store.session.userId,
+  const uid = store.session.userId;
+  if (!uid) { print("NOT LOGGED IN."); return; }
+  
+  const distanceRaw = (document.getElementById("activityDistance")?.value || "").trim();
+  const distance = distanceRaw ? Number(distanceRaw) : null;
+  
+  activitiesRef(uid).add({
     date,
     type,
     duration: Number(duration),
-    notes
+    distance,
+    notes,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    // optional: clear distance input after save
+    const distEl = document.getElementById("activityDistance");
+    if (distEl) distEl.value = "";
+  
+    hideAllForms();
+    print("Activity logged.");
+  })
+  .catch(err => {
+    console.error(err);
+    print(`SAVE FAILED: ${err.code || ""} ${err.message || err}`);
   });
 
-  save();
-  hideAllForms();
-  print("Activity logged.");
 });
 
 cancelActivityBtn.addEventListener("click", hideAllForms);
@@ -456,6 +475,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
