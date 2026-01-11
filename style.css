@@ -10,10 +10,11 @@ body {
   margin: auto;
   border: 1px solid #00aa44;
   padding: 15px;
+  box-sizing: border-box;
 }
 
 #header {
-  padding-top: 12px;   /* space above logo */
+  padding-top: 12px;
   padding-bottom: 12px;
   text-align: center;
   margin-bottom: 10px;
@@ -22,12 +23,11 @@ body {
 .ascii-logo {
   color: #00ff66;
   text-shadow: 0 0 6px #00ff66, 0 0 10px #00ff66;
-  font-family: "Consolas", monospace;
+  font-family: Consolas, monospace;
   margin: 0;
   line-height: 1;
   font-size: 18px;
 }
-
 
 .view {
   margin-top: 10px;
@@ -41,25 +41,36 @@ body {
   margin-top: 8px;
 }
 
+/* ---------- INPUTS ---------- */
 input {
   width: 100%;
   background: black;
   color: #00ff66;
   border: 1px solid #00aa44;
   font-family: inherit;
+  font-size: 16px; /* mobile-safe */
   padding: 6px;
   margin-bottom: 8px;
-  box-sizing: border-box; /* ensures border is included in width */
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
+input:focus {
+  outline: none;
+  border-color: #00aa44;
+}
+
+/* ---------- BUTTONS ---------- */
 button {
   background: black;
   color: #00ff66;
   border: 1px solid #00aa44;
   font-family: inherit;
+  font-size: 16px; /* mobile-safe */
   padding: 8px;
   cursor: pointer;
   margin-top: 5px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
@@ -67,6 +78,11 @@ button:hover {
   color: black;
 }
 
+button:focus {
+  outline: none;
+}
+
+/* ---------- MENU ---------- */
 #menu {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -74,18 +90,20 @@ button:hover {
   margin-top: 10px;
 }
 
-#error, .error {
+/* ---------- ERRORS ---------- */
+#error,
+.error {
   color: #ff5555;
   margin-top: 5px;
 }
 
-/* --- Form Inputs & Buttons Alignment --- */
+/* ---------- FORMS ---------- */
 #activityForm input,
 #profileForm input {
   display: block;
-  width: 100%;        /* full width of the terminal */
+  width: 100%;
   padding: 6px;
-  margin-bottom: 8px; /* space between fields */
+  margin-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -94,13 +112,38 @@ button:hover {
   margin-right: 5px;
   margin-bottom: 8px;
   padding: 8px;
-  width: auto;        /* buttons keep natural width */
+  width: auto;
 }
 
-/* --- Add spacing between menu buttons and screen content --- */
+/* ---------- SCREEN ---------- */
 #screen {
-  margin-top: 15px;      /* space below menu buttons */
-  padding-left: 5px;     /* optional slight indent for terminal feel */
-  white-space: pre-wrap;  /* preserve line breaks */
+  margin-top: 15px;
+  padding-left: 5px;
+  white-space: pre-wrap;
 }
 
+/* ---------- SELECTION (terminal feel) ---------- */
+::selection {
+  background: transparent;
+  color: #00ff66;
+}
+
+input::selection {
+  background: transparent;
+  color: #00ff66;
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 480px) {
+  body {
+    padding: 12px;
+  }
+
+  #menu {
+    grid-template-columns: 1fr;
+  }
+
+  .ascii-logo {
+    font-size: 12px;
+  }
+}
