@@ -31,14 +31,18 @@ const deleteIndex = document.getElementById("deleteIndex");
 const deleteBtn = document.getElementById("deleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
-/* STORAGE (activities still local for now) */
+const editIndex = document.getElementById("editIndex");
+const editBtn = document.getElementById("editBtn");
+
+/* STORAGE */
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
-  activities: JSON.parse(localStorage.getItem("activities")) || [],
+  activities: JSON.parse(localStorage.getItem("activities")) || [], // kept for now (legacy), but Firestore is source
   switchConfirm: false,
   currentDisplayList: [],
   authBusy: false,
-  pendingLoginError: ""
+  pendingLoginError: "",
+  editingActivity: null
 };
 
 function save() {
@@ -59,12 +63,8 @@ function normalizeUsername(name) {
   return (name || "")
     .trim()
     .toLowerCase()
-    .replace(/\s+/g, "")          // remove spaces
-    .replace(/[^a-z0-9_]/g, "");  // allow a-z 0-9 _
-}
-
-function activitiesRef(uid) {
-  return db.collection("users").doc(uid).collection("activities");
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9_]/g, "");
 }
 
 function validateUsername(name) {
@@ -73,6 +73,10 @@ function validateUsername(name) {
   if (name.length > 20) return "USERNAME TOO LONG (MAX 20)";
   if (!/^[a-z0-9_]+$/.test(name)) return "USERNAME: A-Z 0-9 _ ONLY";
   return null;
+}
+
+function activitiesRef(uid) {
+  return db.collection("users").doc(uid).collection("activities");
 }
 
 async function loadUsernameForUid(uid) {
@@ -94,13 +98,15 @@ function showLogin() {
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
 
-  // show any pending auth/db error
   loginError.textContent = store.pendingLoginError || "";
   store.pendingLoginError = "";
 
+  // reset edit state just in case
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
+
   loginEmail.focus();
 }
-
 
 function showApp(showActivity = false) {
   loginView.classList.add("hidden");
@@ -116,12 +122,20 @@ function showActivityForm() {
   screen.textContent = "";
   activityForm.classList.remove("hidden");
 
-  activityType.value = "";
-  activityDuration.value = "";
-  activityNotes.value = "";
+  // Only clear fields if not editing
+  if (!store.editingActivity) {
+    activityType.value = "";
+    activityDuration.value = "";
+    activityNotes.value = "";
 
-  const today = new Date().toISOString().slice(0, 10);
-  activityDate.value = today;
+    const distEl = document.getElementById("activityDistance");
+    if (distEl) distEl.value = "";
+
+    const today = new Date().toISOString().slice(0, 10);
+    activityDate.value = today;
+
+    addActivityBtn.textContent = "Add Activity";
+  }
 
   activityType.focus();
 }
@@ -132,7 +146,7 @@ function showProfileForm() {
   profileForm.classList.remove("hidden");
 
   profileUsername.value = store.session.username || "";
-  profilePin.value = ""; // always blank
+  profilePin.value = "";
 }
 
 function drawHome() {
@@ -155,7 +169,6 @@ loginBtn.addEventListener("click", () => {
     .then(async (userCred) => {
       store.session.userId = userCred.user.uid;
 
-      // Prefer username from Firestore (cross-device)
       const uname = await loadUsernameForUid(userCred.user.uid);
       store.session.username = uname || (loginUser.value.trim() || "USER");
       save();
@@ -164,6 +177,9 @@ loginBtn.addEventListener("click", () => {
       loginUser.value = "";
       loginEmail.value = "";
       loginPin.value = "";
+
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
 
       showApp(true);
     })
@@ -185,21 +201,18 @@ createBtn.addEventListener("click", () => {
   if (!email || !pin) { loginError.textContent = "ENTER EMAIL AND PIN"; return; }
 
   store.authBusy = true;
-  
+
   auth.createUserWithEmailAndPassword(email, pin)
     .then(async (userCred) => {
       const uid = userCred.user.uid;
 
-      // Transaction: claim username if available
       const unameRef = db.collection("usernames").doc(username);
       const userRef = db.collection("users").doc(uid);
 
       try {
         await db.runTransaction(async (tx) => {
           const unameSnap = await tx.get(unameRef);
-          if (unameSnap.exists) {
-            throw new Error("USERNAME_TAKEN");
-          }
+          if (unameSnap.exists) throw new Error("USERNAME_TAKEN");
 
           tx.set(unameRef, {
             uid,
@@ -212,9 +225,6 @@ createBtn.addEventListener("click", () => {
           });
         });
 
-        print("USERNAME CLAIMED.\nPROFILE SAVED.");
-
-        // Success
         store.session.userId = uid;
         store.session.username = username;
         save();
@@ -226,30 +236,26 @@ createBtn.addEventListener("click", () => {
 
         store.authBusy = false;
 
+        store.editingActivity = null;
+        addActivityBtn.textContent = "Add Activity";
+
         showApp(true);
 
       } catch (e) {
-        // Username taken (or transaction fail) -> cleanup the just-created auth user
         console.error(e);
 
-        if (e?.message === "USERNAME_TAKEN") {
-          store.pendingLoginError = "USERNAME TAKEN";
-        } else {
-          store.pendingLoginError = `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
-        }
+        store.pendingLoginError =
+          (e?.message === "USERNAME_TAKEN")
+            ? "USERNAME TAKEN"
+            : `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
 
-
-
-        // Attempt to delete auth account created moments ago
-        try {
-          await auth.currentUser.delete();
-        } catch (_) {}
-
-        // Ensure logged out state
+        try { await auth.currentUser.delete(); } catch (_) {}
         try { await auth.signOut(); } catch (_) {}
+
         store.session.userId = null;
         store.session.username = null;
         save();
+
         store.authBusy = false;
         showLogin();
       }
@@ -267,6 +273,8 @@ menu.addEventListener("click", e => {
 
   hideAllForms();
   screen.textContent = "";
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
 
   switch (e.target.dataset.action) {
     case "log": showActivityForm(); store.switchConfirm = false; break;
@@ -292,8 +300,8 @@ menu.addEventListener("click", e => {
   }
 });
 
-/* ACTIVITY FORM */
-addActivityBtn.addEventListener("click", () => {
+/* ACTIVITY ADD / EDIT */
+addActivityBtn.addEventListener("click", async () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
   const notes = activityNotes.value.trim();
@@ -303,42 +311,63 @@ addActivityBtn.addEventListener("click", () => {
 
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
-  
-  const distanceRaw = (document.getElementById("activityDistance")?.value || "").trim();
+
+  const distEl = document.getElementById("activityDistance");
+  const distanceRaw = (distEl?.value || "").trim();
   const distance = distanceRaw ? Number(distanceRaw) : null;
-  
-  activitiesRef(uid).add({
+
+  const payload = {
     date,
     type,
     duration: Number(duration),
     distance,
-    notes,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-  .then(() => {
-    // optional: clear distance input after save
-    const distEl = document.getElementById("activityDistance");
-    if (distEl) distEl.value = "";
-  
-    hideAllForms();
-    print("Activity logged.");
-  })
-  .catch(err => {
+    notes
+  };
+
+  try {
+    if (store.editingActivity && store.editingActivity.id) {
+      // UPDATE
+      await activitiesRef(uid).doc(store.editingActivity.id).update({
+        ...payload,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
+      hideAllForms();
+      print("Activity updated.");
+      await showHistory(); // refresh
+
+    } else {
+      // ADD
+      await activitiesRef(uid).add({
+        ...payload,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      if (distEl) distEl.value = "";
+      hideAllForms();
+      print("Activity logged.");
+    }
+
+  } catch (err) {
     console.error(err);
     print(`SAVE FAILED: ${err.code || ""} ${err.message || err}`);
-  });
-
+  }
 });
 
-cancelActivityBtn.addEventListener("click", hideAllForms);
+cancelActivityBtn.addEventListener("click", () => {
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
+  hideAllForms();
+});
 
-/* PROFILE SAVE (PIN change yes, username change not yet) */
+/* PROFILE SAVE (PIN change only) */
 saveProfileBtn.addEventListener("click", () => {
   const requestedUsername = normalizeUsername(profileUsername.value);
   const current = normalizeUsername(store.session.username || "");
   const newPin = profilePin.value.trim();
 
-  // Username change not supported yet (keeps uniqueness simple)
   if (requestedUsername && requestedUsername !== current) {
     print("USERNAME CHANGE NOT AVAILABLE YET.\n(Requires username transfer logic.)");
     profileUsername.value = store.session.username || "";
@@ -366,15 +395,7 @@ saveProfileBtn.addEventListener("click", () => {
     });
 });
 
-/* DELETE ACTIVITY */
-deleteBtn.addEventListener("click", () => {
-  const idx = Number(deleteIndex.value) - 1;
-  const list = store.currentDisplayList || [];
-
-  if (idx < 0 || idx >= list.length) return print("Invalid activity number.");
-
-  const idToDelete = list[idx].id;
-  
+/* DELETE ACTIVITY (Firestore) */
 deleteBtn.addEventListener("click", async () => {
   const idx = Number(deleteIndex.value) - 1;
   const list = store.currentDisplayList || [];
@@ -387,67 +408,43 @@ deleteBtn.addEventListener("click", async () => {
   const docId = list[idx].id;
 
   try {
-    await db
-      .collection("users").doc(uid)
-      .collection("activities").doc(docId)
-      .delete();
-
+    await activitiesRef(uid).doc(docId).delete();
     deleteIndex.value = "";
-    await showHistory(); // refresh
-
+    await showHistory();
   } catch (err) {
     console.error(err);
     print(`DELETE FAILED: ${err.code || ""} ${err.message || err}`);
   }
 });
 
-});
-
 cancelDeleteBtn.addEventListener("click", () => {
   deleteForm.classList.add("hidden");
 });
 
-/* DISPLAY FUNCTIONS */
-async function showToday() {
-  hideAllForms();
-  screen.textContent = "";
+/* EDIT ACTIVITY */
+editBtn.addEventListener("click", () => {
+  const idx = Number(editIndex.value) - 1;
+  const list = store.currentDisplayList || [];
 
-  const uid = store.session.userId;
-  if (!uid) { print("NOT LOGGED IN."); return; }
+  if (idx < 0 || idx >= list.length) { print("Invalid activity number."); return; }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const a = list[idx];
+  store.editingActivity = a;
 
-  try {
-    const snap = await db
-      .collection("users").doc(uid)
-      .collection("activities")
-      .where("date", "==", today)
-      .orderBy("createdAt", "desc")
-      .get();
+  showActivityForm();
 
-    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    store.currentDisplayList = list;
+  activityType.value = a.type || "";
+  activityDuration.value = (a.duration ?? "");
+  activityNotes.value = a.notes || "";
+  activityDate.value = a.date || new Date().toISOString().slice(0, 10);
 
-    if (!list.length) {
-      print("No activities today.");
-      return;
-    }
+  const distEl = document.getElementById("activityDistance");
+  if (distEl) distEl.value = (a.distance != null) ? a.distance : "";
 
-    const output = list.map((a, i) => {
-      const dist = (a.distance != null) ? ` | ${a.distance}` : "";
-      const notes = a.notes ? ` (${a.notes})` : "";
-      return `${i + 1}. ${a.type} - ${a.duration} min${dist}${notes}`;
-    }).join("\n");
+  addActivityBtn.textContent = "Save Changes";
+});
 
-    print(output);
-
-  } catch (err) {
-    console.error(err);
-    print(`LOAD FAILED: ${err.code || ""} ${err.message || err}`);
-  }
-}
-
-
+/* DISPLAY: HISTORY (TODAY first, then PAST) */
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
@@ -458,9 +455,7 @@ async function showHistory() {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
-    const snap = await db
-      .collection("users").doc(uid)
-      .collection("activities")
+    const snap = await activitiesRef(uid)
       .orderBy("createdAt", "desc")
       .get();
 
@@ -478,11 +473,10 @@ async function showHistory() {
 
     const lines = [];
 
-    // TODAY section
     lines.push("--- TODAY ---");
     if (todayList.length) {
       todayList.forEach((a, i) => {
-        const num = i + 1; // numbering continues below
+        const num = i + 1;
         const dist = (a.distance != null) ? ` | ${a.distance}` : "";
         const notes = a.notes ? ` (${a.notes})` : "";
         lines.push(`${num}. ${a.type} | ${a.duration} min${dist}${notes}`);
@@ -491,10 +485,9 @@ async function showHistory() {
       lines.push("(none)");
     }
 
-    lines.push(""); // blank line
-
-    // PAST section (continue numbering)
+    lines.push("");
     lines.push("--- PAST ---");
+
     if (pastList.length) {
       pastList.forEach((a, i) => {
         const num = todayList.length + i + 1;
@@ -508,9 +501,9 @@ async function showHistory() {
 
     print(lines.join("\n") + "\n");
 
-    // show delete form
     deleteForm.classList.remove("hidden");
     deleteIndex.value = "";
+    editIndex.value = "";
     deleteIndex.focus();
 
   } catch (err) {
@@ -520,7 +513,7 @@ async function showHistory() {
   }
 }
 
-
+/* DISPLAY: STATISTICS */
 async function showStatistics() {
   hideAllForms();
   screen.textContent = "";
@@ -529,9 +522,7 @@ async function showStatistics() {
   if (!uid) { print("NOT LOGGED IN."); return; }
 
   try {
-    const snap = await db
-      .collection("users").doc(uid)
-      .collection("activities")
+    const snap = await activitiesRef(uid)
       .orderBy("createdAt", "desc")
       .get();
 
@@ -542,8 +533,7 @@ async function showStatistics() {
       return;
     }
 
-    // Totals by activity type
-    const totals = {}; // { type: { minutes: number, distance: number } }
+    const totals = {}; // { type: { minutes, distance } }
 
     for (const a of list) {
       const type = (a.type || "").trim();
@@ -552,19 +542,14 @@ async function showStatistics() {
       if (!totals[type]) totals[type] = { minutes: 0, distance: 0 };
 
       totals[type].minutes += Number(a.duration || 0);
-
-      // distance optional
       if (a.distance != null && a.distance !== "") {
         totals[type].distance += Number(a.distance || 0);
       }
     }
 
-    // Sort by minutes descending
-    const rows = Object.entries(totals)
-      .sort(([,A], [,B]) => B.minutes - A.minutes);
+    const rows = Object.entries(totals).sort(([,A], [,B]) => B.minutes - A.minutes);
 
     const lines = ["--- STATISTICS ---", "TYPE | MINUTES | DIST", ""];
-
     for (const [type, t] of rows) {
       const distStr = t.distance ? t.distance.toFixed(2) : "-";
       lines.push(`${type} | ${t.minutes} | ${distStr}`);
@@ -578,7 +563,6 @@ async function showStatistics() {
   }
 }
 
-
 /* BOOT */
 auth.onAuthStateChanged(async (user) => {
   if (store.authBusy) return;
@@ -591,6 +575,7 @@ auth.onAuthStateChanged(async (user) => {
 
     save();
     showApp(true);
+
   } else {
     store.session.userId = null;
     store.session.username = null;
@@ -598,14 +583,3 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
-
-
-
-
-
-
-
-
-
-
-
