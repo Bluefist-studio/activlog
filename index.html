@@ -119,14 +119,20 @@ ActivLog
   };
 
   firebase.initializeApp(firebaseConfig);
+  // Initialize Firebase
 
   const auth = firebase.auth();
   const db = firebase.firestore();
+  
+  // expose globally
+  window.auth = firebase.auth();
+  window.db = firebase.firestore();
 </script>
 
 <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
