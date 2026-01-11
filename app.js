@@ -424,35 +424,7 @@ editBtn.addEventListener("click", () => {
   const a = list[idx];
   store.editingActivity = a;
 
-  // show delete option only in edit mode
-  let deleteHtml = ``;
-  screen.insertAdjacentHTML("beforeend", deleteHtml);
 
-  document.getElementById("editDeleteBtn").onclick = async () => {
-  const uid = store.session.userId;
-  if (!uid || !store.editingActivity) return;
-
-  try {
-    await db
-      .collection("users").doc(uid)
-      .collection("activities")
-      .doc(store.editingActivity.id)
-      .delete();
-
-    store.editingActivity = null;
-    addActivityBtn.textContent = "Add Activity";
-    await showHistory();
-  } catch (err) {
-    console.error(err);
-    print("DELETE FAILED");
-  }
-};
-
-document.getElementById("editCancelBtn").onclick = () => {
-  store.editingActivity = null;
-  addActivityBtn.textContent = "Add Activity";
-  showHistory();
-};
 
 
   showActivityForm();
@@ -641,6 +613,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
