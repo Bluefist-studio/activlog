@@ -37,7 +37,7 @@ const editBtn = document.getElementById("editBtn");
 /* STORAGE */
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
-  activities: JSON.parse(localStorage.getItem("activities")) || [], // kept for now (legacy), but Firestore is source
+  activities: JSON.parse(localStorage.getItem("activities")) || [], // legacy local (not used for listing now)
   switchConfirm: false,
   currentDisplayList: [],
   authBusy: false,
@@ -52,7 +52,7 @@ function save() {
 
 /* HELPERS */
 function print(text = "") {
-  screen.innerHTML = text.replace(/\n/g, "<br>");
+  screen.innerHTML = String(text).replace(/\n/g, "<br>");
 }
 
 function currentUser() {
@@ -75,16 +75,16 @@ function validateUsername(name) {
   return null;
 }
 
-function activitiesRef(uid) {
-  return db.collection("users").doc(uid).collection("activities");
-}
-
 async function loadUsernameForUid(uid) {
   try {
     const snap = await db.collection("users").doc(uid).get();
     if (snap.exists && snap.data()?.username) return snap.data().username;
-  } catch (e) {}
+  } catch (_) {}
   return null;
+}
+
+function activitiesRef(uid) {
+  return db.collection("users").doc(uid).collection("activities");
 }
 
 /* VIEWS */
@@ -101,7 +101,7 @@ function showLogin() {
   loginError.textContent = store.pendingLoginError || "";
   store.pendingLoginError = "";
 
-  // reset edit state just in case
+  // reset edit mode if any
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
 
@@ -122,12 +122,12 @@ function showActivityForm() {
   screen.textContent = "";
   activityForm.classList.remove("hidden");
 
-  // Only clear fields if not editing
+  // If NOT editing, clear inputs.
+  // If editing, we'll fill them from editBtn handler.
   if (!store.editingActivity) {
     activityType.value = "";
     activityDuration.value = "";
     activityNotes.value = "";
-
     const distEl = document.getElementById("activityDistance");
     if (distEl) distEl.value = "";
 
@@ -177,9 +177,6 @@ loginBtn.addEventListener("click", () => {
       loginUser.value = "";
       loginEmail.value = "";
       loginPin.value = "";
-
-      store.editingActivity = null;
-      addActivityBtn.textContent = "Add Activity";
 
       showApp(true);
     })
@@ -235,19 +232,14 @@ createBtn.addEventListener("click", () => {
         loginPin.value = "";
 
         store.authBusy = false;
-
-        store.editingActivity = null;
-        addActivityBtn.textContent = "Add Activity";
-
         showApp(true);
 
       } catch (e) {
         console.error(e);
 
-        store.pendingLoginError =
-          (e?.message === "USERNAME_TAKEN")
-            ? "USERNAME TAKEN"
-            : `DB ERROR: ${e?.code || ""} ${e?.message || e}`;
+        store.pendingLoginError = (e?.message === "USERNAME_TAKEN")
+          ? "USERNAME TAKEN"
+          : `CREATE FAILED: ${e?.code || ""} ${e?.message || e}`;
 
         try { await auth.currentUser.delete(); } catch (_) {}
         try { await auth.signOut(); } catch (_) {}
@@ -273,14 +265,29 @@ menu.addEventListener("click", e => {
 
   hideAllForms();
   screen.textContent = "";
-  store.editingActivity = null;
-  addActivityBtn.textContent = "Add Activity";
 
   switch (e.target.dataset.action) {
-    case "log": showActivityForm(); store.switchConfirm = false; break;
-    case "history": showHistory(); store.switchConfirm = false; break;
-    case "profile": showProfileForm(); store.switchConfirm = false; break;
-    case "stats": showStatistics(); store.switchConfirm = false; break;
+    case "log":
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
+      showActivityForm();
+      store.switchConfirm = false;
+      break;
+
+    case "history":
+      showHistory();
+      store.switchConfirm = false;
+      break;
+
+    case "profile":
+      showProfileForm();
+      store.switchConfirm = false;
+      break;
+
+    case "stats":
+      showStatistics();
+      store.switchConfirm = false;
+      break;
 
     case "switch":
       if (store.switchConfirm) {
@@ -300,20 +307,22 @@ menu.addEventListener("click", e => {
   }
 });
 
-/* ACTIVITY ADD / EDIT */
+/* ACTIVITY FORM (ADD OR UPDATE) */
 addActivityBtn.addEventListener("click", async () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
   const notes = activityNotes.value.trim();
   const date = activityDate.value || new Date().toISOString().slice(0, 10);
 
-  if (!type || !duration) return alert("Fill activity and minutes");
+  if (!type || !duration) {
+    print("FILL ACTIVITY AND MINUTES.");
+    return;
+  }
 
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
 
-  const distEl = document.getElementById("activityDistance");
-  const distanceRaw = (distEl?.value || "").trim();
+  const distanceRaw = (document.getElementById("activityDistance")?.value || "").trim();
   const distance = distanceRaw ? Number(distanceRaw) : null;
 
   const payload = {
@@ -327,28 +336,29 @@ addActivityBtn.addEventListener("click", async () => {
   try {
     if (store.editingActivity && store.editingActivity.id) {
       // UPDATE
-      await activitiesRef(uid).doc(store.editingActivity.id).update({
-        ...payload,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
 
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
+
       hideAllForms();
       print("Activity updated.");
-      await showHistory(); // refresh
-
-    } else {
-      // ADD
-      await activitiesRef(uid).add({
-        ...payload,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      if (distEl) distEl.value = "";
-      hideAllForms();
-      print("Activity logged.");
+      await showHistory(); // refresh after update
+      return;
     }
+
+    // ADD
+    await activitiesRef(uid).add({
+      ...payload,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // clear distance
+    const distEl = document.getElementById("activityDistance");
+    if (distEl) distEl.value = "";
+
+    hideAllForms();
+    print("Activity logged.");
 
   } catch (err) {
     console.error(err);
@@ -369,7 +379,7 @@ saveProfileBtn.addEventListener("click", () => {
   const newPin = profilePin.value.trim();
 
   if (requestedUsername && requestedUsername !== current) {
-    print("USERNAME CHANGE NOT AVAILABLE YET.\n(Requires username transfer logic.)");
+    print("USERNAME CHANGE NOT AVAILABLE YET.");
     profileUsername.value = store.session.username || "";
     profilePin.value = "";
     return;
@@ -421,7 +431,7 @@ cancelDeleteBtn.addEventListener("click", () => {
   deleteForm.classList.add("hidden");
 });
 
-/* EDIT ACTIVITY */
+/* EDIT ACTIVITY (open form prefilled) */
 editBtn.addEventListener("click", () => {
   const idx = Number(editIndex.value) - 1;
   const list = store.currentDisplayList || [];
@@ -434,7 +444,7 @@ editBtn.addEventListener("click", () => {
   showActivityForm();
 
   activityType.value = a.type || "";
-  activityDuration.value = (a.duration ?? "");
+  activityDuration.value = (a.duration != null) ? a.duration : "";
   activityNotes.value = a.notes || "";
   activityDate.value = a.date || new Date().toISOString().slice(0, 10);
 
@@ -444,7 +454,7 @@ editBtn.addEventListener("click", () => {
   addActivityBtn.textContent = "Save Changes";
 });
 
-/* DISPLAY: HISTORY (TODAY first, then PAST) */
+/* DISPLAY: HISTORY (TODAY + PAST) */
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
@@ -469,7 +479,7 @@ async function showHistory() {
     }
 
     const todayList = list.filter(a => a.date === today);
-    const pastList  = list.filter(a => a.date !== today);
+    const pastList = list.filter(a => a.date !== today);
 
     const lines = [];
 
@@ -501,6 +511,7 @@ async function showHistory() {
 
     print(lines.join("\n") + "\n");
 
+    // show tools
     deleteForm.classList.remove("hidden");
     deleteIndex.value = "";
     editIndex.value = "";
@@ -547,9 +558,11 @@ async function showStatistics() {
       }
     }
 
-    const rows = Object.entries(totals).sort(([,A], [,B]) => B.minutes - A.minutes);
+    const rows = Object.entries(totals)
+      .sort(([, A], [, B]) => B.minutes - A.minutes);
 
     const lines = ["--- STATISTICS ---", "TYPE | MINUTES | DIST", ""];
+
     for (const [type, t] of rows) {
       const distStr = t.distance ? t.distance.toFixed(2) : "-";
       lines.push(`${type} | ${t.minutes} | ${distStr}`);
@@ -575,7 +588,6 @@ auth.onAuthStateChanged(async (user) => {
 
     save();
     showApp(true);
-
   } else {
     store.session.userId = null;
     store.session.username = null;
