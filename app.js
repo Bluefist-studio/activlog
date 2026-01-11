@@ -40,6 +40,11 @@ function usernameToEmail(username) {
   return `${username.toLowerCase()}@activlog.local`;
 }
 
+function normalizeUsername(username) {
+  return username.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+
 function save() {
   localStorage.setItem("users", JSON.stringify(store.users));
   localStorage.setItem("session", JSON.stringify(store.session));
@@ -106,8 +111,9 @@ function drawHome() {
 
 /* LOGIN & CREATE USER */
 loginBtn.addEventListener("click", () => {
-  const username = loginUser.value.trim();
+  const username = normalizeUsername(loginUser.value);
   const pin = loginPin.value.trim();
+  const email = usernameToEmail(username);
 
   if (!username || !pin) {
     loginError.textContent = "ENTER USERNAME AND PIN";
@@ -135,8 +141,10 @@ loginBtn.addEventListener("click", () => {
 
 
 createBtn.addEventListener("click", () => {
-  const username = loginUser.value.trim();
+  const username = normalizeUsername(loginUser.value);
   const pin = loginPin.value.trim();
+  const email = usernameToEmail(username);
+
 
   if (!username || !pin) {
     loginError.textContent = "ENTER USERNAME AND PIN";
@@ -368,6 +376,7 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
+
 
 
 
