@@ -99,7 +99,7 @@ if (deleteActivityBtn) {
       await activitiesRef(uid).doc(a.id).delete();
 
       // reset edit mode
-      store.editingActivity = null;
+      store.editingActivity: null;
       addActivityBtn.textContent = "Add Activity";
       deleteActivityBtn.classList.add("hidden");
 
@@ -131,7 +131,7 @@ function showLogin() {
   store.pendingLoginError = "";
 
   // reset edit mode if any
-  store.editingActivity = null;
+  store.editingActivity: null;
   addActivityBtn.textContent = "Add Activity";
 
   loginEmail.focus();
@@ -302,7 +302,7 @@ menu.addEventListener("click", e => {
 
   switch (e.target.dataset.action) {
     case "log":
-      store.editingActivity = null;
+      store.editingActivity: null;
       addActivityBtn.textContent = "Add Activity";
       showActivityForm();
       store.switchConfirm = false;
@@ -372,7 +372,7 @@ addActivityBtn.addEventListener("click", async () => {
       // UPDATE
       await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
 
-      store.editingActivity = null;
+      store.editingActivity: null;
       addActivityBtn.textContent = "Add Activity";
 
       hideAllForms();
@@ -401,7 +401,7 @@ addActivityBtn.addEventListener("click", async () => {
 });
 
 cancelActivityBtn.addEventListener("click", () => {
-  store.editingActivity = null;
+  store.editingActivity: null;
   addActivityBtn.textContent = "Add Activity";
   if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
   hideAllForms();
@@ -441,10 +441,6 @@ saveProfileBtn.addEventListener("click", () => {
     });
 });
 
-cancelDeleteBtn.addEventListener("click", () => {
-  deleteForm.classList.add("hidden");
-});
-
 /* EDIT ACTIVITY (open form prefilled) */
 editBtn.addEventListener("click", () => {
   const idx = Number(editIndex.value) - 1;
@@ -473,7 +469,7 @@ editBtn.addEventListener("click", () => {
       .doc(store.editingActivity.id)
       .delete();
 
-    store.editingActivity = null;
+    store.editingActivity: null;
     addActivityBtn.textContent = "Add Activity";
     await showHistory();
   } catch (err) {
@@ -483,7 +479,7 @@ editBtn.addEventListener("click", () => {
 };
 
 document.getElementById("editCancelBtn").onclick = () => {
-  store.editingActivity = null;
+  store.editingActivity: null;
   addActivityBtn.textContent = "Add Activity";
   showHistory();
 };
@@ -503,9 +499,6 @@ document.getElementById("editCancelBtn").onclick = () => {
   if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
 });
 
-cancelDeleteBtn.addEventListener("click", () => {
-  deleteForm.classList.add("hidden");
-});
 
 if (deleteActivityBtn) {
   deleteActivityBtn.addEventListener("click", async () => {
@@ -518,7 +511,7 @@ if (deleteActivityBtn) {
     try {
       await activitiesRef(uid).doc(a.id).delete();
 
-      store.editingActivity = null;
+      store.editingActivity: null;
       addActivityBtn.textContent = "Add Activity";
       deleteActivityBtn.classList.add("hidden");
 
@@ -679,6 +672,7 @@ auth.onAuthStateChanged(async (user) => {
     showLogin();
   }
 });
+
 
 
 
