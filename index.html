@@ -10,10 +10,7 @@
 <div id="terminal">
 
 <div id="header">
-  <pre class="ascii-logo">
-  </u>
-ActivLog
-  </pre>
+  <pre class="ascii-logo">ActivLog</pre>
 </div>
 
 
@@ -101,13 +98,6 @@ ActivLog
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-  firebase.initializeApp(firebaseConfig);
-  window.auth = firebase.auth();
-  window.db = firebase.firestore();
-</script>
-
-
-<script>
   const firebaseConfig = {
     apiKey: "AIzaSyBe_0oWH02bKiXSpOz3IlHtYuJSbMesVz0",
     authDomain: "activlog-data.firebaseapp.com",
@@ -119,12 +109,6 @@ ActivLog
   };
 
   firebase.initializeApp(firebaseConfig);
-  // Initialize Firebase
-
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  
-  // expose globally
   window.auth = firebase.auth();
   window.db = firebase.firestore();
 </script>
@@ -132,6 +116,7 @@ ActivLog
 <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
