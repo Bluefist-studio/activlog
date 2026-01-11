@@ -1,12 +1,15 @@
 /* ELEMENTS */
 const loginView = document.getElementById("loginView");
 const appView = document.getElementById("appView");
-const loginUser = document.getElementById("loginUser");
-const loginEmail = document.getElementById("loginEmail");
-const loginPin = document.getElementById("loginPin");
+
+const loginUser = document.getElementById("loginUser");     // username (unique)
+const loginEmail = document.getElementById("loginEmail");   // real email
+const loginPin = document.getElementById("loginPin");       // PIN (firebase password)
+
 const loginBtn = document.getElementById("loginBtn");
 const createBtn = document.getElementById("createBtn");
 const loginError = document.getElementById("loginError");
+
 const screen = document.getElementById("screen");
 const menu = document.getElementById("menu");
 
@@ -28,30 +31,50 @@ const deleteIndex = document.getElementById("deleteIndex");
 const deleteBtn = document.getElementById("deleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
-/* STORAGE */
+/* STORAGE (activities still local for now) */
 const store = {
-  users: JSON.parse(localStorage.getItem("users")) || [],
-  session: JSON.parse(localStorage.getItem("session")) || { userId: null },
+  session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
   activities: JSON.parse(localStorage.getItem("activities")) || [],
   switchConfirm: false,
   currentDisplayList: []
 };
 
 function save() {
-  localStorage.setItem("users", JSON.stringify(store.users));
   localStorage.setItem("session", JSON.stringify(store.session));
   localStorage.setItem("activities", JSON.stringify(store.activities));
 }
 
 /* HELPERS */
-function currentUser() {
-  // Firebase user id is stored in store.session.userId
-  return { id: store.session.userId, username: store.session.username || "UNKNOWN" };
-}
-
-
 function print(text = "") {
   screen.innerHTML = text.replace(/\n/g, "<br>");
+}
+
+function currentUser() {
+  return { id: store.session.userId, username: store.session.username || "USER" };
+}
+
+function normalizeUsername(name) {
+  return (name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")          // remove spaces
+    .replace(/[^a-z0-9_]/g, "");  // allow a-z 0-9 _
+}
+
+function validateUsername(name) {
+  if (!name) return "USERNAME REQUIRED";
+  if (name.length < 3) return "USERNAME TOO SHORT (MIN 3)";
+  if (name.length > 20) return "USERNAME TOO LONG (MAX 20)";
+  if (!/^[a-z0-9_]+$/.test(name)) return "USERNAME: A-Z 0-9 _ ONLY";
+  return null;
+}
+
+async function loadUsernameForUid(uid) {
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    if (snap.exists && snap.data()?.username) return snap.data().username;
+  } catch (e) {}
+  return null;
 }
 
 /* VIEWS */
@@ -61,12 +84,19 @@ function hideAllForms() {
   deleteForm.classList.add("hidden");
 }
 
+function showLogin() {
+  loginView.classList.remove("hidden");
+  appView.classList.add("hidden");
+  loginError.textContent = "";
+  loginEmail.focus();
+}
+
 function showApp(showActivity = false) {
   loginView.classList.add("hidden");
   appView.classList.remove("hidden");
   hideAllForms();
 
-  if(showActivity) showActivityForm();
+  if (showActivity) showActivityForm();
   else drawHome();
 }
 
@@ -79,7 +109,7 @@ function showActivityForm() {
   activityDuration.value = "";
   activityNotes.value = "";
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0, 10);
   activityDate.value = today;
 
   activityType.focus();
@@ -91,9 +121,8 @@ function showProfileForm() {
   profileForm.classList.remove("hidden");
 
   profileUsername.value = store.session.username || "";
-  profilePin.value = ""; // do not display pin
+  profilePin.value = ""; // always blank
 }
-
 
 function drawHome() {
   screen.textContent = "";
@@ -101,11 +130,10 @@ function drawHome() {
   print(`USER: ${user.username}\n\nSelect an option.`);
 }
 
-/* LOGIN & CREATE USER */
+/* LOGIN */
 loginBtn.addEventListener("click", () => {
-  const username = loginUser.value.trim();
   const email = (loginEmail.value || "").trim();
-  const pin = loginPin.value.trim();
+  const pin = (loginPin.value || "").trim();
 
   if (!email || !pin) {
     loginError.textContent = "ENTER EMAIL AND PIN";
@@ -113,12 +141,12 @@ loginBtn.addEventListener("click", () => {
   }
 
   auth.signInWithEmailAndPassword(email, pin)
-    .then(userCred => {
+    .then(async (userCred) => {
       store.session.userId = userCred.user.uid;
 
-      // Keep a local display name (can be edited in Profile)
-      store.session.username = username || store.session.username || "USER";
-
+      // Prefer username from Firestore (cross-device)
+      const uname = await loadUsernameForUid(userCred.user.uid);
+      store.session.username = uname || (loginUser.value.trim() || "USER");
       save();
 
       loginError.textContent = "";
@@ -134,30 +162,77 @@ loginBtn.addEventListener("click", () => {
     });
 });
 
-
-
+/* CREATE USER (unique username enforced) */
 createBtn.addEventListener("click", () => {
-  const username = loginUser.value.trim();
+  const rawUsername = (loginUser.value || "").trim();
+  const username = normalizeUsername(rawUsername);
   const email = (loginEmail.value || "").trim();
-  const pin = loginPin.value.trim();
+  const pin = (loginPin.value || "").trim();
 
-  if (!username || !email || !pin) {
-    loginError.textContent = "ENTER USERNAME, EMAIL, AND PIN";
-    return;
-  }
+  const v = validateUsername(username);
+  if (v) { loginError.textContent = v; return; }
+  if (!email || !pin) { loginError.textContent = "ENTER EMAIL AND PIN"; return; }
 
   auth.createUserWithEmailAndPassword(email, pin)
-    .then(userCred => {
-      store.session.userId = userCred.user.uid;
-      store.session.username = username;
-      save();
+    .then(async (userCred) => {
+      const uid = userCred.user.uid;
 
-      loginError.textContent = "";
-      loginUser.value = "";
-      loginEmail.value = "";
-      loginPin.value = "";
+      // Transaction: claim username if available
+      const unameRef = db.collection("usernames").doc(username);
+      const userRef = db.collection("users").doc(uid);
 
-      showApp(true);
+      try {
+        await db.runTransaction(async (tx) => {
+          const unameSnap = await tx.get(unameRef);
+          if (unameSnap.exists) {
+            throw new Error("USERNAME_TAKEN");
+          }
+
+          tx.set(unameRef, {
+            uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          tx.set(userRef, {
+            username,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        });
+
+        // Success
+        store.session.userId = uid;
+        store.session.username = username;
+        save();
+
+        loginError.textContent = "";
+        loginUser.value = "";
+        loginEmail.value = "";
+        loginPin.value = "";
+
+        showApp(true);
+
+      } catch (e) {
+        // Username taken (or transaction fail) -> cleanup the just-created auth user
+        console.error(e);
+
+        if (e?.message === "USERNAME_TAKEN") {
+          loginError.textContent = "USERNAME TAKEN";
+        } else {
+          loginError.textContent = "CREATE FAILED (DB)";
+        }
+
+        // Attempt to delete auth account created moments ago
+        try {
+          await auth.currentUser.delete();
+        } catch (_) {}
+
+        // Ensure logged out state
+        try { await auth.signOut(); } catch (_) {}
+        store.session.userId = null;
+        store.session.username = null;
+        save();
+        showLogin();
+      }
     })
     .catch(err => {
       console.error(err);
@@ -165,38 +240,35 @@ createBtn.addEventListener("click", () => {
     });
 });
 
-
-
 /* MENU */
 menu.addEventListener("click", e => {
-  if(!e.target.dataset.action) return;
+  if (!e.target.dataset.action) return;
 
   hideAllForms();
   screen.textContent = "";
 
-  switch(e.target.dataset.action){
+  switch (e.target.dataset.action) {
     case "log": showActivityForm(); store.switchConfirm = false; break;
     case "today": showToday(); store.switchConfirm = false; break;
     case "history": showHistory(); store.switchConfirm = false; break;
     case "profile": showProfileForm(); store.switchConfirm = false; break;
     case "stats": showStatistics(); store.switchConfirm = false; break;
+
     case "switch":
-      if(store.switchConfirm) {
+      if (store.switchConfirm) {
         store.switchConfirm = false;
-    
+
         auth.signOut().finally(() => {
           store.session.userId = null;
           store.session.username = null;
           save();
           showLogin();
         });
-    
       } else {
         store.switchConfirm = true;
         print("Press 'Switch User' again to confirm logout.");
       }
       break;
-
   }
 });
 
@@ -205,9 +277,9 @@ addActivityBtn.addEventListener("click", () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
   const notes = activityNotes.value.trim();
-  const date = activityDate.value || new Date().toISOString().slice(0,10);
+  const date = activityDate.value || new Date().toISOString().slice(0, 10);
 
-  if(!type || !duration) return alert("Fill activity and minutes");
+  if (!type || !duration) return alert("Fill activity and minutes");
 
   store.activities.push({
     id: Date.now().toString(),
@@ -217,6 +289,7 @@ addActivityBtn.addEventListener("click", () => {
     duration: Number(duration),
     notes
   });
+
   save();
   hideAllForms();
   print("Activity logged.");
@@ -224,22 +297,20 @@ addActivityBtn.addEventListener("click", () => {
 
 cancelActivityBtn.addEventListener("click", hideAllForms);
 
-/* PROFILE SAVE */
+/* PROFILE SAVE (PIN change yes, username change not yet) */
 saveProfileBtn.addEventListener("click", () => {
-  const username = profileUsername.value.trim();
+  const requestedUsername = normalizeUsername(profileUsername.value);
+  const current = normalizeUsername(store.session.username || "");
   const newPin = profilePin.value.trim();
 
-  // Username is required, PIN is optional
-  if (!username) {
-    print("USERNAME REQUIRED.");
+  // Username change not supported yet (keeps uniqueness simple)
+  if (requestedUsername && requestedUsername !== current) {
+    print("USERNAME CHANGE NOT AVAILABLE YET.\n(Requires username transfer logic.)");
+    profileUsername.value = store.session.username || "";
+    profilePin.value = "";
     return;
   }
 
-  // Save display name locally
-  store.session.username = username;
-  save();
-
-  // If PIN is blank, we ONLY update username display
   if (!newPin) {
     print("PROFILE UPDATED.");
     hideAllForms();
@@ -247,7 +318,6 @@ saveProfileBtn.addEventListener("click", () => {
     return;
   }
 
-  // If PIN provided, attempt to update Firebase password
   auth.currentUser.updatePassword(newPin)
     .then(() => {
       print("PROFILE UPDATED.");
@@ -255,27 +325,24 @@ saveProfileBtn.addEventListener("click", () => {
       drawHome();
     })
     .catch(() => {
-      print("USERNAME UPDATED.\nPIN CHANGE REQUIRES RE-LOGIN.");
+      print("PIN CHANGE REQUIRES RE-LOGIN.");
       hideAllForms();
       drawHome();
     });
 });
-
 
 /* DELETE ACTIVITY */
 deleteBtn.addEventListener("click", () => {
   const idx = Number(deleteIndex.value) - 1;
   const list = store.currentDisplayList || [];
 
-  if(idx < 0 || idx >= list.length) return print("Invalid activity number.");
+  if (idx < 0 || idx >= list.length) return print("Invalid activity number.");
 
   const idToDelete = list[idx].id;
   store.activities = store.activities.filter(a => a.id !== idToDelete);
   save();
 
   deleteIndex.value = "";
-
-  // Refresh history view
   showHistory();
 });
 
@@ -286,11 +353,13 @@ cancelDeleteBtn.addEventListener("click", () => {
 /* DISPLAY FUNCTIONS */
 function showToday() {
   hideAllForms();
-  const today = new Date().toISOString().slice(0,10);
-  const list = store.activities.filter(a => a.userId===store.session.userId && a.date===today);
+  const today = new Date().toISOString().slice(0, 10);
+  const list = store.activities.filter(a => a.userId === store.session.userId && a.date === today);
 
-  if(list.length) {
-    let output = list.map((a,i) => `${i+1}. ${a.type} - ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`).join("\n");
+  if (list.length) {
+    const output = list.map((a, i) =>
+      `${i + 1}. ${a.type} - ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`
+    ).join("\n");
     print(output);
     store.currentDisplayList = list;
   } else {
@@ -304,13 +373,16 @@ function showToday() {
 function showHistory() {
   hideAllForms();
   screen.textContent = "";
-  const list = store.activities.filter(a => a.userId===store.session.userId);
 
-  if(list.length) {
-    let output = list.map((a,i) => `${i+1}. ${a.date} | ${a.type} | ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`).join("\n");
+  const list = store.activities.filter(a => a.userId === store.session.userId);
+
+  if (list.length) {
+    const output = list.map((a, i) =>
+      `${i + 1}. ${a.date} | ${a.type} | ${a.duration} min${a.notes ? " (" + a.notes + ")" : ""}`
+    ).join("\n");
+
     print(output + "\n");
-    
-    // Show delete form inline
+
     deleteForm.classList.remove("hidden");
     deleteIndex.value = "";
     deleteIndex.focus();
@@ -325,40 +397,37 @@ function showHistory() {
 
 function showStatistics() {
   hideAllForms();
-  const userActivities = store.activities.filter(a => a.userId===store.session.userId);
+  const userActivities = store.activities.filter(a => a.userId === store.session.userId);
   screen.textContent = "";
 
-  if(!userActivities.length) {
+  if (!userActivities.length) {
     print("No activities to show statistics.");
     return;
   }
 
   const totals = {};
   userActivities.forEach(a => {
-    if(!totals[a.type]) totals[a.type] = 0;
-    totals[a.type] += a.duration;
+    const key = (a.type || "").trim();
+    if (!totals[key]) totals[key] = 0;
+    totals[key] += a.duration;
   });
 
   const lines = ["--- STATISTICS ---"];
-  for(const [type, mins] of Object.entries(totals)) {
+  for (const [type, mins] of Object.entries(totals)) {
     lines.push(`${type} : ${mins} min`);
   }
 
   print(lines.join("\n"));
 }
 
-/* LOGIN/APP BOOT */
-function showLogin() {
-  loginView.classList.remove("hidden");
-  appView.classList.add("hidden");
-  loginEmail.focus();
-}
-
-auth.onAuthStateChanged((user) => {
-  if(user) {
+/* BOOT */
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
     store.session.userId = user.uid;
-    // keep previous username if we have it; otherwise show placeholder
-    store.session.username = store.session.username || "USER";
+
+    const uname = await loadUsernameForUid(user.uid);
+    store.session.username = uname || store.session.username || "USER";
+
     save();
     showApp(true);
   } else {
@@ -368,9 +437,3 @@ auth.onAuthStateChanged((user) => {
     showLogin();
   }
 });
-
-
-
-
-
-
