@@ -725,12 +725,12 @@ async function showStatistics() {
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
       const lines = [
-        centerLine("=== STREAKS ==="),
+        ("=== STREAKS ==="),
         "",
-        centerLine(`Current streak: ${currentStreak} day(s)`), 
-        centerLine(`Best streak: ${bestStreak} day(s)`),
+        (`Current streak: ${currentStreak} day(s)`), 
+        (`Best streak: ${bestStreak} day(s)`),
         "",
-        centerLine("--- TOTALS BY TYPE ---"),
+        ("--- TOTALS BY TYPE ---"),
         ""
       ];
 
@@ -741,7 +741,7 @@ async function showStatistics() {
         const line = distance
           ? `${type} - ${minutes} - ${distance}`
           : `${type} - ${minutes}`;
-        lines.push(centerLine(line));
+        lines.push(line);
       }
 
 
@@ -786,6 +786,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
