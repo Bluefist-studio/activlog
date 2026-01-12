@@ -28,6 +28,15 @@ body {
   line-height: 1;
   font-size: 32px;
 }
+/* Clickable activity lines */
+.activity-line {
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.activity-line:hover {
+  text-decoration: underline;
+}
 
 .view {
   margin-top: 10px;
@@ -172,6 +181,7 @@ input::selection {
     white-space: pre-wrap;
   }
 }
+
 
 
 
