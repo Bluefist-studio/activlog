@@ -511,9 +511,13 @@ async function showHistory() {
     };
 
     for (const a of list) {
+
+      console.log("DATE RAW:", a.date, typeof a.date);
+      
       if (!a.date) continue;
       const d = parseLocalDate(a.date);
       const diff = Math.round((today - d) / dayMs);
+      
 
       if (diff === 0) groups.today.push(a);
       else if (diff === 1) groups.yesterday.push(a);
@@ -695,4 +699,5 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
