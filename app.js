@@ -103,6 +103,13 @@ function parseLocalDate(dateStr) {
   return new Date(y, m - 1, d); // local midnight
 }
 
+function getLocalDateString() {
+  const d = new Date();
+  const local = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return local.toISOString().slice(0, 10);
+}
+
+
 /* VIEWS */
 function hideAllForms() {
   activityForm.classList.add("hidden");
@@ -147,8 +154,7 @@ function showActivityForm() {
   if (distEl) distEl.value = "";
 
   // ALWAYS reset date to today
-  const today = new Date().toISOString().slice(0, 10);
-  activityDate.value = today;
+  activityDate.value = getLocalDateString();
 }
 
 
@@ -705,6 +711,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
