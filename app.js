@@ -738,13 +738,15 @@ async function showStatistics() {
       ];
 
 
-   for (const [type, t] of rows) {
-      const distStr = t.distance ? t.distance.toFixed(2) : "-";
-      const typeCol = type.padEnd(10, " ");
-      const minCol = String(t.minutes).padStart(7, " ");
-      const distCol = distStr.padStart(10, " ");
-      lines.push(`${typeCol} ${minCol} ${distCol}`);
-    }
+      for (const [type, t] of rows) {
+        const minutes = `${t.minutes} Min`;
+        const distance = t.distance ? `${t.distance.toFixed(2)} Km` : "";
+        const line = distance
+          ? `${type} - ${minutes} - ${distance}`
+          : `${type} - ${minutes}`;
+        lines.push(line);
+      }
+
 
 
     print(lines.join("\n"));
@@ -786,6 +788,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
