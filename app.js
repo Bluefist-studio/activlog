@@ -517,6 +517,9 @@ async function showHistory() {
       
       if (!a.date) continue;
       const d = parseLocalDate(a.date);
+      
+      console.log("PARSED DATE:", d, "DIFF:", Math.round((today - d) / dayMs));
+
       const diff = Math.round((today - d) / dayMs);
       
 
@@ -700,6 +703,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
