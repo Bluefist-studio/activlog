@@ -148,6 +148,12 @@ function calculateStreaks(list) {
   return { currentStreak, bestStreak };
 }
 
+function center(text, width = 30) {
+  const pad = Math.max(0, Math.floor((width - text.length) / 2));
+  return " ".repeat(pad) + text;
+}
+
+
 
 
 //////////////////////////////* VIEWS *////////////////////////////
@@ -727,12 +733,12 @@ async function showStatistics() {
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
       const lines = [
-        "=== STATISTICS ===",
+        center("=== STREAKS ==="),
         "",
-        `Current streak: ${currentStreak} day(s)`,
-        `Best streak:    ${bestStreak} day(s)`,
+        center(`Current streak: ${currentStreak} day(s)`), 
+        center(`Best streak: ${bestStreak} day(s)`),
         "",
-        "--- TOTALS BY TYPE ---",
+        center("--- TOTALS BY TYPE ---"),
         "Type        Minutes    Distance",
         ""
       ];
@@ -744,8 +750,9 @@ async function showStatistics() {
         const line = distance
           ? `${type} - ${minutes} - ${distance}`
           : `${type} - ${minutes}`;
-        lines.push(line);
+        lines.push(center(line));
       }
+
 
 
 
@@ -788,6 +795,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
