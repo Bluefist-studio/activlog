@@ -153,6 +153,14 @@ function center(text, width = 30) {
   return " ".repeat(pad) + text;
 }
 
+function centerLine(text) {
+  const width = screen.clientWidth || 300; // fallback if needed
+  const charWidth = 8; // average monospace char width in px
+  const maxChars = Math.floor(width / charWidth);
+
+  const pad = Math.max(0, Math.floor((maxChars - text.length) / 2));
+  return " ".repeat(pad) + text;
+}
 
 
 
@@ -733,12 +741,12 @@ async function showStatistics() {
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
       const lines = [
-        center("=== STREAKS ==="),
+        centerLine("=== STREAKS ==="),
         "",
-        center(`Current streak: ${currentStreak} day(s)`), 
-        center(`Best streak: ${bestStreak} day(s)`),
+        centerLine(`Current streak: ${currentStreak} day(s)`), 
+        centerLine(`Best streak: ${bestStreak} day(s)`),
         "",
-        center("--- TOTALS BY TYPE ---"),
+        centerLine("--- TOTALS BY TYPE ---"),
         "Type        Minutes    Distance",
         ""
       ];
@@ -750,7 +758,7 @@ async function showStatistics() {
         const line = distance
           ? `${type} - ${minutes} - ${distance}`
           : `${type} - ${minutes}`;
-        lines.push(center(line));
+        lines.push(centerLine(line));
       }
 
 
@@ -795,6 +803,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
