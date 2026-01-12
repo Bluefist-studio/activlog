@@ -194,10 +194,6 @@ function showApp(showActivity = false) {
 
 function showActivityForm() {
 
-  console.log("MAX SET TO:", activityDate.max);
-  console.log("activityDate element:", activityDate);
-
-
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
@@ -220,11 +216,6 @@ function showActivityForm() {
   if (activityDate.value > activityDate.max) {
     activityDate.value = activityDate.max;
   }
-
-
-  console.log("LOCAL DATE STRING:", getLocalDateString());
-
-  console.log("MAX SET TO:", activityDate.max);
 }
 
 
@@ -589,17 +580,10 @@ async function showHistory() {
     };
 
     for (const a of list) {
-
-      
-
-      console.log("HISTORY ITEM:", a);
       
       if (!a.date) continue;
       const d = parseLocalDate(a.date);
       const diff = Math.round((today - d) / dayMs);
-      
-      console.log("PARSED DATE:", d, "DIFF:", Math.round((today - d) / dayMs));
-      console.log("PARSED:", a.date, "→", d);
 
       if (diff === 0) groups.today.push(a);
       else if (diff === 1) groups.yesterday.push(a);
@@ -802,6 +786,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
