@@ -34,7 +34,8 @@ const saveProfileBtn = document.getElementById("saveProfileBtn");
 const deleteForm = document.getElementById("deleteForm"); // kept only to keep it hidden
 const deleteActivityBtn = document.getElementById("deleteActivityBtn");
 
-/* STORAGE */
+
+////////////////////////* STORAGE */////////////////////////////////
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
   activities: [],          // current activities from Firestore (for history/edit)
@@ -48,7 +49,7 @@ function save() {
   localStorage.setItem("session", JSON.stringify(store.session));
 }
 
-/* HELPERS */
+///////////////////////* HELPERS *////////////////////////////////
 function print(text = "") {
   // Used by existing flows: overwrite content, simple text
   screen.innerHTML = String(text).replace(/\n/g, "<br>");
@@ -114,8 +115,42 @@ function getLocalDateString() {
   return local.toISOString().slice(0, 10);
 }
 
+function calculateStreaks(list) {
+  const dayMs = 24 * 60 * 60 * 1000;
 
-/* VIEWS */
+  // Extract unique dates
+  const uniqueDates = [...new Set(list.map(a => a.date))].sort().reverse();
+
+  if (!uniqueDates.length) return { currentStreak: 0, bestStreak: 0 };
+
+  const today = parseLocalDate(getLocalDateString());
+  let expected = today;
+
+  let currentStreak = 0;
+  let bestStreak = 0;
+
+  for (const dateStr of uniqueDates) {
+    const d = parseLocalDate(dateStr);
+
+    if (d.getTime() === expected.getTime()) {
+      // streak continues
+      currentStreak++;
+      bestStreak = Math.max(bestStreak, currentStreak);
+      expected = new Date(expected.getTime() - dayMs);
+    } else {
+      // streak broken — reset expected to one day before this date
+      expected = new Date(d.getTime() - dayMs);
+      currentStreak = 1;
+      bestStreak = Math.max(bestStreak, currentStreak);
+    }
+  }
+
+  return { currentStreak, bestStreak };
+}
+
+
+
+//////////////////////////////* VIEWS *////////////////////////////
 function hideAllForms() {
   activityForm.classList.add("hidden");
   profileForm.classList.add("hidden");
@@ -216,7 +251,7 @@ function drawHome() {
   print(`USER: ${user.username}\n\nSelect an option.`);
 }
 
-/* LOGIN */
+///////////////////////////////* LOGIN *///////////////////////////////////////
 loginBtn.addEventListener("click", () => {
   const email = (loginEmail.value || "").trim();
   const pin = (loginPin.value || "").trim();
@@ -320,7 +355,7 @@ createBtn.addEventListener("click", () => {
     });
 });
 
-/* MENU */
+/////////////////////////////* MENU *///////////////////////////////////
 menu.addEventListener("click", e => {
   const action = e.target.dataset.action;
   if (!action) return;
@@ -651,6 +686,7 @@ screen.addEventListener("click", (e) => {
 });
 
 /* DISPLAY: STATISTICS */
+/* DISPLAY: STATISTICS */
 async function showStatistics() {
   hideAllForms();
   screen.textContent = "";
@@ -670,6 +706,9 @@ async function showStatistics() {
       return;
     }
 
+    // --- NEW: streak calculation ---
+    const { currentStreak, bestStreak } = calculateStreaks(list);
+
     const totals = {}; // { type: { minutes, distance } }
 
     for (const a of list) {
@@ -687,12 +726,26 @@ async function showStatistics() {
     const rows = Object.entries(totals)
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
-    const lines = ["--- STATISTICS ---", "TYPE | MINUTES | DIST", ""];
+      const lines = [
+        "=== STATISTICS ===",
+        "",
+        `Current streak: ${currentStreak} day(s)`,
+        `Best streak:    ${bestStreak} day(s)`,
+        "",
+        "--- TOTALS BY TYPE ---",
+        "Type        Minutes    Distance",
+        ""
+      ];
 
-    for (const [type, t] of rows) {
+
+   for (const [type, t] of rows) {
       const distStr = t.distance ? t.distance.toFixed(2) : "-";
-      lines.push(`${type} | ${t.minutes} | ${distStr}`);
+      const typeCol = type.padEnd(10, " ");
+      const minCol = String(t.minutes).padStart(7, " ");
+      const distCol = distStr.padStart(10, " ");
+      lines.push(`${typeCol} ${minCol} ${distCol}`);
     }
+
 
     print(lines.join("\n"));
 
@@ -701,6 +754,7 @@ async function showStatistics() {
     print(`STATS FAILED: ${err.code || ""} ${err.message || err}`);
   }
 }
+
 
 /* BOOT */
 auth.onAuthStateChanged(async (user) => {
@@ -732,6 +786,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
