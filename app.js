@@ -747,7 +747,6 @@ async function showStatistics() {
         centerLine(`Best streak: ${bestStreak} day(s)`),
         "",
         centerLine("--- TOTALS BY TYPE ---"),
-        "Type        Minutes    Distance",
         ""
       ];
 
@@ -803,6 +802,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
