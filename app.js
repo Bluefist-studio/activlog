@@ -26,32 +26,26 @@ const profileUsername = document.getElementById("profileUsername");
 const profilePin = document.getElementById("profilePin");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 
-const deleteForm = document.getElementById("deleteForm");
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-
-const editIndex = document.getElementById("editIndex");
-const editBtn = document.getElementById("editBtn");
-
+const deleteForm = document.getElementById("deleteForm"); // kept only to keep it hidden
 const deleteActivityBtn = document.getElementById("deleteActivityBtn");
 
 /* STORAGE */
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
-  activities: JSON.parse(localStorage.getItem("activities")) || [], // legacy local (not used for listing now)
+  activities: [],          // current activities from Firestore (for history/edit)
   switchConfirm: false,
-  currentDisplayList: [],
   authBusy: false,
   pendingLoginError: "",
-  editingActivity: null
+  editingActivity: null    // activity object being edited (or null)
 };
 
 function save() {
   localStorage.setItem("session", JSON.stringify(store.session));
-  localStorage.setItem("activities", JSON.stringify(store.activities));
 }
 
 /* HELPERS */
 function print(text = "") {
+  // Used by existing flows: overwrite content, simple text
   screen.innerHTML = String(text).replace(/\n/g, "<br>");
 }
 
@@ -87,26 +81,40 @@ function activitiesRef(uid) {
   return db.collection("users").doc(uid).collection("activities");
 }
 
+function formatShortDateFromString(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
 
+function formatShortDateFromDate(d) {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
 
 /* VIEWS */
 function hideAllForms() {
   activityForm.classList.add("hidden");
   profileForm.classList.add("hidden");
-  deleteForm.classList.add("hidden");
+  if (deleteForm) deleteForm.classList.add("hidden"); // keep old form hidden
 }
 
 function showLogin() {
+  hideAllForms();
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
 
   loginError.textContent = store.pendingLoginError || "";
   store.pendingLoginError = "";
 
-  // reset edit mode if any
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
-
 }
 
 function showApp(showActivity = false) {
@@ -119,35 +127,45 @@ function showApp(showActivity = false) {
 }
 
 function showActivityForm() {
+  // New entry (not editing)
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
 
- // If we are NOT editing, hide delete + set label
-  if (!store.editingActivity) {
-    if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
-    addActivityBtn.textContent = "Add Activity";
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
+  if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
 
-    if (!store.editingActivity && deleteActivityBtn) {
-    deleteActivityBtn.classList.add("hidden");
-  }
+  activityType.value = "";
+  activityDuration.value = "";
+  activityNotes.value = "";
+  const distEl = document.getElementById("activityDistance");
+  if (distEl) distEl.value = "";
 
-  }
+  const today = new Date().toISOString().slice(0, 10);
+  activityDate.value = today;
+}
 
-  // If editing, we'll fill them from editBtn handler.
-  if (!store.editingActivity) {
-    activityType.value = "";
-    activityDuration.value = "";
-    activityNotes.value = "";
-    const distEl = document.getElementById("activityDistance");
-    if (distEl) distEl.value = "";
+function openEditActivity(activity) {
+  // Edit existing activity: prefill form
+  if (!activity) return;
 
-    const today = new Date().toISOString().slice(0, 10);
-    activityDate.value = today;
+  hideAllForms();
+  screen.textContent = "";
+  activityForm.classList.remove("hidden");
 
-    addActivityBtn.textContent = "Add Activity";
-  }
+  store.editingActivity = activity;
 
+  activityType.value = activity.type || "";
+  activityDuration.value = activity.duration != null ? activity.duration : "";
+  activityNotes.value = activity.notes || "";
+  activityDate.value = activity.date || new Date().toISOString().slice(0, 10);
+
+  const distEl = document.getElementById("activityDistance");
+  if (distEl) distEl.value = activity.distance != null ? activity.distance : "";
+
+  addActivityBtn.textContent = "Save Changes";
+  if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
 }
 
 function showProfileForm() {
@@ -271,12 +289,13 @@ createBtn.addEventListener("click", () => {
 
 /* MENU */
 menu.addEventListener("click", e => {
-  if (!e.target.dataset.action) return;
+  const action = e.target.dataset.action;
+  if (!action) return;
 
   hideAllForms();
   screen.textContent = "";
 
-  switch (e.target.dataset.action) {
+  switch (action) {
     case "log":
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
@@ -350,6 +369,7 @@ addActivityBtn.addEventListener("click", async () => {
 
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
+      if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
 
       hideAllForms();
       print("Activity updated.");
@@ -363,7 +383,6 @@ addActivityBtn.addEventListener("click", async () => {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // clear distance
     const distEl = document.getElementById("activityDistance");
     if (distEl) distEl.value = "";
 
@@ -391,8 +410,6 @@ cancelActivityBtn.addEventListener("click", async () => {
     drawHome();            // normal cancel from "Log Activity"
   }
 });
-
-
 
 /* PROFILE SAVE (PIN change only) */
 saveProfileBtn.addEventListener("click", () => {
@@ -427,46 +444,7 @@ saveProfileBtn.addEventListener("click", () => {
     });
 });
 
-/* EDIT ACTIVITY (open form prefilled) */
-editBtn.addEventListener("click", () => {
-    // --- DEBUG GUARD ---
-  if (!activityForm || !activityType || !activityDuration || !activityDate || !activityNotes || !addActivityBtn) {
-    console.error("EDIT FAIL: missing form element", {
-      activityForm, activityType, activityDuration, activityDate, activityNotes, addActivityBtn
-    });
-    print("EDIT FAIL: FORM ELEMENT MISSING (CHECK HTML IDS).");
-    return;
-  }
-
-  
-  const idx = Number(editIndex.value) - 1;
-  const list = store.currentDisplayList || [];
-
-  if (idx < 0 || idx >= list.length) { print("Invalid activity number."); return; }
-
-  const a = list[idx];
-  store.editingActivity = a;
-
-
-
-
-  showActivityForm();
-
-  activityType.value = a.type || "";
-  activityDuration.value = (a.duration != null) ? a.duration : "";
-  activityNotes.value = a.notes || "";
-  activityDate.value = a.date || new Date().toISOString().slice(0, 10);
-
-  const distEl = document.getElementById("activityDistance");
-  if (distEl) distEl.value = (a.distance != null) ? a.distance : "";
-
-  addActivityBtn.textContent = "Save Changes";
-  if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
-
-  
-});
-
-
+/* DELETE ACTIVITY (from edit form) */
 if (deleteActivityBtn) {
   deleteActivityBtn.addEventListener("click", async () => {
     const uid = store.session.userId;
@@ -493,8 +471,7 @@ if (deleteActivityBtn) {
   });
 }
 
-
-/* DISPLAY: HISTORY (TODAY + PAST) */
+/* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) */
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
@@ -502,69 +479,135 @@ async function showHistory() {
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
 
-  const today = new Date().toISOString().slice(0, 10);
+  store.editingActivity = null;
 
   try {
     const snap = await activitiesRef(uid)
-      .orderBy("createdAt", "desc")
+      .orderBy("date", "desc")
       .get();
 
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    store.activities = list;
 
     if (!list.length) {
       print("No history.");
-      deleteForm.classList.add("hidden");
       return;
     }
 
-    const todayList = list.filter(a => a.date === today);
-    const pastList = list.filter(a => a.date !== today);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayMs = 86400000;
 
-    const displayList = [...todayList, ...pastList];
-    store.currentDisplayList = displayList;
+    const groups = {
+      today: [],
+      yesterday: [],
+      last7: [],
+      older: []
+    };
 
+    for (const a of list) {
+      if (!a.date) continue;
+      const d = new Date(a.date);
+      d.setHours(0, 0, 0, 0);
+      const diff = Math.round((today - d) / dayMs);
 
-    const lines = [];
-
-    lines.push("--- TODAY ---");
-    if (todayList.length) {
-      todayList.forEach((a, i) => {
-        const num = i + 1;
-        const dist = (a.distance != null) ? ` | ${a.distance}` : "";
-        const notes = a.notes ? ` (${a.notes})` : "";
-        lines.push(`${num}. ${a.type} | ${a.duration} min${dist}${notes}`);
-      });
-    } else {
-      lines.push("(none)");
+      if (diff === 0) groups.today.push(a);
+      else if (diff === 1) groups.yesterday.push(a);
+      else if (diff >= 2 && diff <= 7) groups.last7.push(a);
+      else if (diff > 7) groups.older.push(a);
     }
 
-    lines.push("");
-    lines.push("--- PAST ---");
+    let html = "";
 
-    if (pastList.length) {
-      pastList.forEach((a, i) => {
-        const num = todayList.length + i + 1;
-        const dist = (a.distance != null) ? ` | ${a.distance}` : "";
-        const notes = a.notes ? ` (${a.notes})` : "";
-        lines.push(`${num}. ${a.date} | ${a.type} | ${a.duration} min${dist}${notes}`);
-      });
-    } else {
-      lines.push("(none)");
+    function append(text = "") {
+      html += `${text}<br>`;
     }
 
-    print(lines.join("\n") + "\n");
+    function appendGroup(title, arr, showDateLabel) {
+      if (!arr.length) return;
+      if (title) append(title);
 
-    // show tools
-    deleteForm.classList.remove("hidden");
-    editIndex.value = "";
+      for (const a of arr) {
+        const dateLabel = formatShortDateFromString(a.date);
+        const dist = a.distance != null && a.distance !== "" ? ` — ${a.distance}` : "";
+        const notes = a.notes ? ` (${a.notes})` : "";
+        const base = showDateLabel ? `${dateLabel} — ${a.type}` : a.type;
+        const line = `&gt; ${base} — ${a.duration} min${dist}${notes}`;
+        html += `<div class="activity-line" data-id="${a.id}">${line}</div><br>`;
+      }
 
+      append("");
+    }
+
+    // TODAY
+    const todayLabel = formatShortDateFromDate(today);
+    append(`TODAY — ${todayLabel}`);
+    if (groups.today.length) {
+      appendGroup("", groups.today, false);
+    } else {
+      append("(none)");
+      append("");
+    }
+
+    // YESTERDAY
+    if (groups.yesterday.length) {
+      const y = new Date(today.getTime() - dayMs);
+      const yLabel = formatShortDateFromDate(y);
+      append(`YESTERDAY — ${yLabel}`);
+      appendGroup("", groups.yesterday, false);
+    }
+
+    // LAST 7 DAYS (2–7 days ago)
+    appendGroup("LAST 7 DAYS", groups.last7, true);
+
+    // OLDER
+    appendGroup("OLDER", groups.older, true);
+
+    screen.innerHTML = html;
 
   } catch (err) {
     console.error(err);
     print(`LOAD FAILED: ${err.code || ""} ${err.message || err}`);
-    deleteForm.classList.add("hidden");
   }
 }
+
+/* CLICK HANDLER: history lines + confirmation YES/NO */
+screen.addEventListener("click", (e) => {
+  const target = e.target;
+
+  // Confirmation buttons
+  const confirmAction = target.dataset.confirm;
+  if (confirmAction === "yes") {
+    if (store.editingActivity) {
+      openEditActivity(store.editingActivity);
+    }
+    return;
+  }
+  if (confirmAction === "no") {
+    store.editingActivity = null;
+    showHistory();
+    return;
+  }
+
+  // Activity line clicked
+  const row = target.closest(".activity-line");
+  if (!row) return;
+
+  const id = row.dataset.id;
+  const activity = store.activities.find(a => a.id === id);
+  if (!activity) return;
+
+  store.editingActivity = activity;
+
+  const dist = activity.distance != null && activity.distance !== "" ? ` — ${activity.distance}` : "";
+  const notes = activity.notes ? ` (${activity.notes})` : "";
+  const line = `${activity.type} — ${activity.duration} min${dist}${notes}`;
+
+  screen.innerHTML =
+    `EDIT THIS ACTIVITY?<br>${line}<br><br>` +
+    `<span data-confirm="yes">[YES]</span>&nbsp;&nbsp;` +
+    `<span data-confirm="no">[NO]</span>`;
+});
 
 /* DISPLAY: STATISTICS */
 async function showStatistics() {
@@ -638,7 +681,6 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
-
 function handleLoginKey(e) {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -649,11 +691,3 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
-
-
-
-
-
-
-
-
