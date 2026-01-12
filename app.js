@@ -132,7 +132,6 @@ function showApp(showActivity = false) {
 }
 
 function showActivityForm() {
-  // New entry (not editing)
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
@@ -147,9 +146,11 @@ function showActivityForm() {
   const distEl = document.getElementById("activityDistance");
   if (distEl) distEl.value = "";
 
+  // ALWAYS reset date to today
   const today = new Date().toISOString().slice(0, 10);
   activityDate.value = today;
 }
+
 
 function openEditActivity(activity) {
   // Edit existing activity: prefill form
@@ -704,6 +705,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
