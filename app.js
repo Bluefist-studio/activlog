@@ -17,6 +17,11 @@ const activityForm = document.getElementById("activityForm");
 const activityType = document.getElementById("activityType");
 const activityDuration = document.getElementById("activityDuration");
 const activityDate = document.getElementById("activityDate");
+  activityDate.addEventListener("input", () => {
+    if (activityDate.value > activityDate.max) {
+      activityDate.value = activityDate.max;
+    }
+  });
 const activityNotes = document.getElementById("activityNotes");
 const addActivityBtn = document.getElementById("addActivityBtn");
 const cancelActivityBtn = document.getElementById("cancelActivityBtn");
@@ -727,6 +732,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
