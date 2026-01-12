@@ -478,6 +478,9 @@ if (deleteActivityBtn) {
 
 /* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) */
 async function showHistory() {
+
+  console.log("SNAP METADATA:", snap.metadata);
+
   hideAllForms();
   screen.textContent = "";
 
@@ -489,7 +492,7 @@ async function showHistory() {
   try {
     const snap = await activitiesRef(uid)
       .orderBy("createdAt", "desc")
-      .get();
+      .get({ source: "server" });
 
 
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -698,6 +701,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
