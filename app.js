@@ -98,6 +98,11 @@ function formatShortDateFromDate(d) {
   });
 }
 
+function parseLocalDate(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d); // local midnight
+}
+
 /* VIEWS */
 function hideAllForms() {
   activityForm.classList.add("hidden");
@@ -507,8 +512,7 @@ async function showHistory() {
 
     for (const a of list) {
       if (!a.date) continue;
-      const d = new Date(a.date);
-      d.setHours(0, 0, 0, 0);
+      const d = parseLocalDate(a.date);
       const diff = Math.round((today - d) / dayMs);
 
       if (diff === 0) groups.today.push(a);
@@ -691,3 +695,4 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
