@@ -139,6 +139,9 @@ function showApp(showActivity = false) {
 }
 
 function showActivityForm() {
+
+  console.log("MAX SET TO:", activityDate.max);
+
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
@@ -713,6 +716,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
