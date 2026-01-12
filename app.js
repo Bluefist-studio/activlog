@@ -141,6 +141,8 @@ function showApp(showActivity = false) {
 function showActivityForm() {
 
   console.log("MAX SET TO:", activityDate.max);
+  console.log("activityDate element:", activityDate);
+
 
   hideAllForms();
   screen.textContent = "";
@@ -160,6 +162,9 @@ function showActivityForm() {
   activityDate.value = getLocalDateString();
   activityDate.max = getLocalDateString();
 
+  console.log("LOCAL DATE STRING:", getLocalDateString());
+
+  console.log("MAX SET TO:", activityDate.max);
 }
 
 
@@ -716,6 +721,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
