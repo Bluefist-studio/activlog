@@ -513,6 +513,8 @@ async function showHistory() {
 
     for (const a of list) {
 
+      console.log("PARSED:", a.date, "→", d);
+
       console.log("HISTORY ITEM:", a);
       
       if (!a.date) continue;
@@ -703,6 +705,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
