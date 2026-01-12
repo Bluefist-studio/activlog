@@ -159,8 +159,14 @@ function showActivityForm() {
   if (distEl) distEl.value = "";
 
   // ALWAYS reset date to today
-  activityDate.value = getLocalDateString();
-  activityDate.max = getLocalDateString();
+  const today = getLocalDateString();
+  activityDate.value = today;
+  activityDate.max = today;
+
+  if (activityDate.value > activityDate.max) {
+    activityDate.value = activityDate.max;
+  }
+
 
   console.log("LOCAL DATE STRING:", getLocalDateString());
 
@@ -721,6 +727,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
