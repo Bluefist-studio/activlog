@@ -488,8 +488,9 @@ async function showHistory() {
 
   try {
     const snap = await activitiesRef(uid)
-      .orderBy("date", "desc")
+      .orderBy("createdAt", "desc")
       .get();
+
 
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     store.activities = list;
@@ -697,6 +698,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
