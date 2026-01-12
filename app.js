@@ -155,6 +155,8 @@ function showActivityForm() {
 
   // ALWAYS reset date to today
   activityDate.value = getLocalDateString();
+  activityDate.max = getLocalDateString();
+
 }
 
 
@@ -711,6 +713,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
