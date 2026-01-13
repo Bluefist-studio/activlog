@@ -725,12 +725,12 @@ async function showStatistics() {
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
       const lines = [
-        ("=== STREAKS ==="),
+        ("STREAKS"),
         "",
         (`Current streak: ${currentStreak} day(s)`), 
         (`Best streak: ${bestStreak} day(s)`),
         "",
-        ("--- TOTALS BY TYPE ---"),
+        ("TOTALS BY TYPE"),
         ""
       ];
 
@@ -786,6 +786,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
