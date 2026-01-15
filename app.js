@@ -87,13 +87,10 @@ function activitiesRef(uid) {
   return db.collection("users").doc(uid).collection("activities");
 }
 
-function formatShortDateFromString(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric"
-  });
+function formatShortDateFromString(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  // Do NOT use new Date(y, m-1, d) — it causes timezone shifts
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
 function formatShortDateFromDate(d) {
@@ -120,38 +117,64 @@ function parseLocalDate(dateStr) {
 }
 
 
+
+
 function calculateStreaks(list) {
-  const dayMs = 24 * 60 * 60 * 1000;
+  // Normalize dates to YYYY-MM-DD
+  list = list.map(a => ({ ...a, date: a.date.trim().slice(0, 10) }));
 
-  // Extract unique dates
+  // Extract unique dates, newest first
   const uniqueDates = [...new Set(list.map(a => a.date))].sort().reverse();
-
   if (!uniqueDates.length) return { currentStreak: 0, bestStreak: 0 };
 
-  const today = parseLocalDate(getLocalDateString());
-  let expected = today;
+  function daysFromDateString(str) {
+    const [y, m, d] = str.split("-").map(Number);
+    return Date.UTC(y, m - 1, d) / 86400000;
+  }
 
+  const todayStr = getLocalDateString();
+  const todayDays = daysFromDateString(todayStr);
+
+  // ---- CURRENT STREAK: must start from today ----
   let currentStreak = 0;
-  let bestStreak = 0;
+  let expected = todayDays;
 
   for (const dateStr of uniqueDates) {
-    const d = parseLocalDate(dateStr);
+    const dayIndex = daysFromDateString(dateStr);
 
-    if (d.getTime() === expected.getTime()) {
-      // streak continues
+    if (dayIndex === expected) {
       currentStreak++;
-      bestStreak = Math.max(bestStreak, currentStreak);
-      expected = new Date(expected.getTime() - dayMs);
+      expected--;
+    } else if (dayIndex < expected) {
+      // gap before today → streak is broken
+      break;
     } else {
-      // streak broken — reset expected to one day before this date
-      expected = new Date(d.getTime() - dayMs);
-      currentStreak = 1;
-      bestStreak = Math.max(bestStreak, currentStreak);
+      // date in the future or duplicate — ignore
+      continue;
     }
+  }
+
+  // ---- BEST STREAK: longest run anywhere ----
+  let bestStreak = 0;
+  let streak = 0;
+  let prev = null;
+
+  for (const dateStr of uniqueDates.slice().reverse()) {
+    const dayIndex = daysFromDateString(dateStr);
+
+    if (prev === null || dayIndex === prev + 1) {
+      streak++;
+    } else if (dayIndex > prev + 1) {
+      streak = 1;
+    }
+    prev = dayIndex;
+    if (streak > bestStreak) bestStreak = streak;
   }
 
   return { currentStreak, bestStreak };
 }
+
+
 
 function center(text, width = 30) {
   const pad = Math.max(0, Math.floor((width - text.length) / 2));
@@ -245,6 +268,13 @@ function openEditActivity(activity) {
   addActivityBtn.textContent = "Save Changes";
   if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
 }
+
+function showFriends() {
+  hideAllForms();
+  screen.textContent = "";
+  print("This feature is under construction.");
+}
+
 
 function showProfileForm() {
   hideAllForms();
@@ -383,6 +413,11 @@ menu.addEventListener("click", e => {
 
     case "history":
       showHistory();
+      store.switchConfirm = false;
+      break;
+
+    case "friends":
+      showFriends();
       store.switchConfirm = false;
       break;
 
@@ -549,7 +584,7 @@ if (deleteActivityBtn) {
   });
 }
 
-/* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) */
+///////////////////////////* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) *////////////////////////////
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
@@ -564,7 +599,6 @@ async function showHistory() {
       .orderBy("createdAt", "desc")
       .get({ source: "server" });
 
-
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     store.activities = list;
 
@@ -573,32 +607,44 @@ async function showHistory() {
       return;
     }
 
-    const groups = { today: [], yesterday: [], last7: [], older: [] };
+const groups = {
+  today: [],
+  yesterday: [],
+  last7: [],
+  older: []
+};
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
-const sevenDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
 const dayMs = 86400000;
 
-    
 
-print("DEBUG TODAY: " + today.toDateString());
+// 1. Get today's date as YYYY-MM-DD
+const todayStr = getLocalDateString();
 
+// 2. Convert YYYY-MM-DD → days since epoch (UTC)
+function daysFromDateString(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  return Date.UTC(y, m - 1, d) / 86400000;
+}
+
+// 3. Compute today's day index
+const todayDays = daysFromDateString(todayStr);
+
+// 4. Group activities
 for (const a of list) {
   if (!a.date) continue;
 
-  const d = parseLocalDate(a.date);
-  const diff = Math.floor((today - d) / 86400000);
+  const activityDays = daysFromDateString(a.date);
+  const diff = todayDays - activityDays;
 
-  print(`DEBUG ACTIVITY: date=${a.date}, asDate=${d.toDateString()}, diff=${diff}`);
-  
-  if (diff === 0) groups.today.push(a); 
-  else if (diff === 1) groups.yesterday.push(a); 
-  else if (diff >= 2 && diff <= 8) groups.last7.push(a); 
-  else if (diff > 8) groups.older.push(a); 
-
+  if (diff === 0) groups.today.push(a);
+  else if (diff === 1) groups.yesterday.push(a);
+  else if (diff >= 2 && diff <= 7) groups.last7.push(a);
+  else if (diff > 7) groups.older.push(a);
 }
+
 
     let html = "";
 
@@ -622,9 +668,26 @@ for (const a of list) {
       append("");
     }
 
+    // TODAY
+    const todayLabel = formatShortDateFromDate(today);
+    append(`TODAY — ${todayLabel}`);
+    if (groups.today.length) {
+      appendGroup("", groups.today, false);
+    } else {
+      append("(none)");
+      append("");
+    }
+
+    // YESTERDAY
+    if (groups.yesterday.length) {
+      const y = new Date(today.getTime() - dayMs);
+      const yLabel = formatShortDateFromDate(y);
+      append(`YESTERDAY — ${yLabel}`);
+      appendGroup("", groups.yesterday, false);
+    }
+
     // LAST 7 DAYS (2–7 days ago)
     appendGroup("LAST 7 DAYS", groups.last7, true);
-
 
     // OLDER
     appendGroup("OLDER", groups.older, true);
@@ -636,6 +699,7 @@ for (const a of list) {
     print(`LOAD FAILED: ${err.code || ""} ${err.message || err}`);
   }
 }
+
 
 /* CLICK HANDLER: history lines + confirmation YES/NO */
 screen.addEventListener("click", (e) => {
@@ -870,36 +934,3 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
