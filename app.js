@@ -571,28 +571,26 @@ async function showHistory() {
       return;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayMs = 86400000;
+    const groups = { today: [], yesterday: [], last7: [], older: [] };
 
-    const groups = {
-      today: [],
-      yesterday: [],
-      last7: [],
-      older: []
-    };
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 
-    for (const a of list) {
-      
-      if (!a.date) continue;
-      const d = parseLocalDate(a.date);
-      const diff = Math.round((today - d) / dayMs);
+const sevenDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+const dayMs = 86400000;
 
-      if (diff === 0) groups.today.push(a);
-      else if (diff === 1) groups.yesterday.push(a);
-      else if (diff >= 2 && diff <= 7) groups.last7.push(a);
-      else if (diff > 7) groups.older.push(a);
-    }
+for (const a of list) {
+  if (!a.date) continue;
+
+  const d = parseLocalDate(a.date);
+  const diff = Math.floor((today - d) / dayMs);
+
+  if (diff === 0) groups.today.push(a);
+  else if (diff === 1) groups.yesterday.push(a);
+  else if (diff >= 2 && diff <= 7) groups.last7.push(a);
+  else if (diff > 7) groups.older.push(a);
+}
+
 
     let html = "";
 
@@ -837,6 +835,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
