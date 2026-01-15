@@ -686,9 +686,57 @@ screen.addEventListener("click", (e) => {
     `<span data-confirm="no">[NO]</span>`;
 });
 
-/* DISPLAY: STATISTICS */
+///////////////////* REPAIR: STATISTICS *////////////////////////
+async function repairShiftedDates() {
+  const uid = store.session.userId;
+  if (!uid) {
+    print("NOT LOGGED IN.");
+    return;
+  }
+
+  print("Starting date repair...");
+
+  const snap = await activitiesRef(uid).get();
+  const updates = [];
+
+  snap.forEach(doc => {
+    const data = doc.data();
+    const dateStr = data.date;
+
+    if (!dateStr) return;
+
+    // Parse the stored date
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const stored = new Date(y, m - 1, d);
+
+    // Detect UTC shift: stored date is one day behind local date
+    const corrected = new Date(stored.getFullYear(), stored.getMonth(), stored.getDate() + 1);
+
+    // Convert back to YYYY-MM-DD
+    const fixed = [
+      corrected.getFullYear(),
+      String(corrected.getMonth() + 1).padStart(2, "0"),
+      String(corrected.getDate()).padStart(2, "0")
+    ].join("-");
+
+    // Only update if changed
+    if (fixed !== dateStr) {
+      updates.push(doc.ref.update({ date: fixed }));
+    }
+  });
+
+  await Promise.all(updates);
+
+  print(`Repaired ${updates.length} activities.`);
+  print("Date repair complete.");
+}
+
+
+
+
 /* DISPLAY: STATISTICS */
 async function showStatistics() {
+
   hideAllForms();
   screen.textContent = "";
 
@@ -789,6 +837,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
