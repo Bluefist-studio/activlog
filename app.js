@@ -729,6 +729,50 @@ async function repairShiftedDates() {
   print("Date repair complete.");
 }
 
+async function repairShiftedDates2() {
+  const uid = store.session.userId;
+  if (!uid) {
+    print("NOT LOGGED IN.");
+    return;
+  }
+
+  print("Starting date repair...");
+
+  const snap = await activitiesRef(uid).get();
+  const updates = [];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    const dateStr = data.date;
+    if (!dateStr) continue;
+
+    const d = parseLocalDate(dateStr);
+
+    // Calculate diff in days
+    const diff = Math.floor((today - d) / 86400000);
+
+    // Only fix entries that are exactly 1 day behind
+    if (diff === 1) {
+      const corrected = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+
+      const fixed = [
+        corrected.getFullYear(),
+        String(corrected.getMonth() + 1).padStart(2, "0"),
+        String(corrected.getDate()).padStart(2, "0")
+      ].join("-");
+
+      updates.push(doc.ref.update({ date: fixed }));
+    }
+  }
+
+  await Promise.all(updates);
+
+  print(`Repaired ${updates.length} activities.`);
+  print("Date repair complete.");
+}
 
 
 
@@ -835,6 +879,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
