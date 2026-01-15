@@ -592,12 +592,13 @@ for (const a of list) {
   const diff = Math.floor((today - d) / 86400000);
 
   print(`DEBUG ACTIVITY: date=${a.date}, asDate=${d.toDateString()}, diff=${diff}`);
+  
+  if (diff === 0) groups.today.push(a); 
+  else if (diff === 1) groups.yesterday.push(a); 
+  else if (diff >= 2 && diff <= 8) groups.last7.push(a); 
+  else if (diff > 8) groups.older.push(a); 
+
 }
-
-
-if (diff >= 0 && diff <= 6) groups.last7.push(a);
-else if (diff >= 7) groups.older.push(a);
-
 
     let html = "";
 
@@ -869,6 +870,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
