@@ -585,10 +585,9 @@ for (const a of list) {
   const d = parseLocalDate(a.date);
   const diff = Math.floor((today - d) / dayMs);
 
-  if (diff === 0) groups.today.push(a);
-  else if (diff === 1) groups.yesterday.push(a);
-  else if (diff >= 2 && diff <= 7) groups.last7.push(a);
-  else if (diff > 7) groups.older.push(a);
+if (diff >= 0 && diff <= 6) groups.last7.push(a);
+else if (diff >= 7) groups.older.push(a);
+
 }
 
 
@@ -614,26 +613,9 @@ for (const a of list) {
       append("");
     }
 
-    // TODAY
-    const todayLabel = formatShortDateFromDate(today);
-    append(`TODAY — ${todayLabel}`);
-    if (groups.today.length) {
-      appendGroup("", groups.today, false);
-    } else {
-      append("(none)");
-      append("");
-    }
-
-    // YESTERDAY
-    if (groups.yesterday.length) {
-      const y = new Date(today.getTime() - dayMs);
-      const yLabel = formatShortDateFromDate(y);
-      append(`YESTERDAY — ${yLabel}`);
-      appendGroup("", groups.yesterday, false);
-    }
-
     // LAST 7 DAYS (2–7 days ago)
     appendGroup("LAST 7 DAYS", groups.last7, true);
+
 
     // OLDER
     appendGroup("OLDER", groups.older, true);
@@ -879,6 +861,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
