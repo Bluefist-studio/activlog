@@ -598,8 +598,6 @@ for (const a of list) {
 if (diff >= 0 && diff <= 6) groups.last7.push(a);
 else if (diff >= 7) groups.older.push(a);
 
-}
-
 
     let html = "";
 
@@ -871,6 +869,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
