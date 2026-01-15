@@ -111,9 +111,12 @@ function parseLocalDate(dateStr) {
 
 function getLocalDateString() {
   const d = new Date();
-  const local = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  return local.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
+
 
 function calculateStreaks(list) {
   const dayMs = 24 * 60 * 60 * 1000;
@@ -786,6 +789,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
