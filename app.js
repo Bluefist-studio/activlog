@@ -104,10 +104,7 @@ function formatShortDateFromDate(d) {
   });
 }
 
-function parseLocalDate(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d); // local midnight
-}
+
 
 function getLocalDateString() {
   const d = new Date();
@@ -115,6 +112,11 @@ function getLocalDateString() {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d); // local midnight
 }
 
 
@@ -579,11 +581,19 @@ today.setHours(0, 0, 0, 0);
 const sevenDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
 const dayMs = 86400000;
 
+    
+
+print("DEBUG TODAY: " + today.toDateString());
+
 for (const a of list) {
   if (!a.date) continue;
 
   const d = parseLocalDate(a.date);
-  const diff = Math.floor((today - d) / dayMs);
+  const diff = Math.floor((today - d) / 86400000);
+
+  print(`DEBUG ACTIVITY: date=${a.date}, asDate=${d.toDateString()}, diff=${diff}`);
+}
+
 
 if (diff >= 0 && diff <= 6) groups.last7.push(a);
 else if (diff >= 7) groups.older.push(a);
@@ -861,6 +871,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
