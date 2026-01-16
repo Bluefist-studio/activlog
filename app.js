@@ -34,6 +34,84 @@ const saveProfileBtn = document.getElementById("saveProfileBtn");
 const deleteForm = document.getElementById("deleteForm"); // kept only to keep it hidden
 const deleteActivityBtn = document.getElementById("deleteActivityBtn");
 
+////////////////*QUOTES*////////////////////
+
+const MOTIVATION_QUOTES = [
+  "Every bit of movement is a step toward a healthier you.",
+  "Small actions add up. Your body notices.",
+  "It doesn’t have to be a workout — just movement.",
+  "Slow, fast, big, small — every movement matters.",
+  "A little movement today is better than none tomorrow.",
+  "Health isn’t built in the gym. It’s built in everyday moments.",
+  "Move in any way you can. It all counts.",
+  "Tiny efforts become real change.",
+  "You don’t need a routine. You just need to move.",
+  "Your body doesn’t care how you moved — just that you did."
+];
+
+function getDailyQuote() {
+  const now = new Date();
+
+  // Change twice a day: morning + afternoon/evening
+  const day = now.getFullYear() * 1000 + (now.getMonth() + 1) * 50 + now.getDate();
+  const half = now.getHours() < 12 ? 0 : 1;
+
+  const index = (day + half) % MOTIVATION_QUOTES.length;
+  return MOTIVATION_QUOTES[index];
+}
+
+function updateDailyQuote() {
+  const el = document.getElementById("dailyQuote");
+  if (el) {
+    el.textContent = getDailyQuote();
+  }
+}
+
+const PROMO_MESSAGE = `
+ActivLog is the simple, manual activity log for real people who want to stay aware of their daily movement without fitness pressure, metrics overload, or automatic tracking.
+`;
+
+const PROMO_FEATURES = `
+Beginner friendly & low pressure
+• ActivLog is made for anyone who wants to stay active without pressure—just log whatever movement you did today, big or small.
+
+Manual logging clarity
+• You choose what counts. Enter any activity manually and keep a simple record of the effort you put in every day.
+
+Everyday life focus
+• From stretching to shoveling snow, ActivLog lets you log real life activity, not just traditional workouts.
+
+Anti overwhelm appeal
+• No GPS, no sensors, no complicated graphs—just clean, simple activity logging you control.
+`;
+
+const PROMO_PARAGRAPH = `
+ActivLog is a lightweight, friendly activity logger designed for people who want a simple way to stay aware of their daily movement. Unlike fitness apps that focus on tracking devices, sports metrics, or complex analytics, ActivLog puts you in control. You manually record any activity you choose—whether it’s a walk, a few push-ups, stretching, housework, yard work, or anything else that gets you moving.
+
+It’s perfect for beginners, people restarting their fitness journey, and anyone who wants to track everyday activity without pressure or clutter. Your history and basic stats give you a clear picture of your habits while keeping things relaxed and easy to understand. And with optional social features, you can share activity logs with friends and motivate each other in a supportive, low stress way.
+
+Simple, flexible, and built for real life—ActivLog helps you stay aware of your movement without trying to be a fitness coach. Just record what you did today and keep building momentum one entry at a time.
+`;
+
+function showPromoMessage() {
+  const el = document.getElementById("promoMessage");
+  if (!el) return;
+
+  el.innerHTML = `
+    <p class="promo-headline">${PROMO_MESSAGE}</p>
+
+    <div class="promo-features">
+${PROMO_FEATURES}
+    </div>
+
+    <p class="promo-paragraph">${PROMO_PARAGRAPH}</p>
+  `;
+}
+
+
+
+
+
 
 ////////////////////////* STORAGE */////////////////////////////////
 const store = {
@@ -51,9 +129,9 @@ function save() {
 
 ///////////////////////* HELPERS *////////////////////////////////
 function print(text = "") {
-  // Used by existing flows: overwrite content, simple text
-  screen.innerHTML = String(text).replace(/\n/g, "<br>");
+  screen.innerHTML += String(text).replace(/\n/g, "<br>");
 }
+
 
 function currentUser() {
   return { id: store.session.userId, username: store.session.username || "USER" };
@@ -215,6 +293,12 @@ function showLogin() {
 
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
+
+const promo = document.getElementById("promoMessage"); 
+
+if (promo) promo.classList.remove("hidden"); 
+showPromoMessage();
+
 }
 
 function showApp(showActivity = false) {
@@ -222,8 +306,12 @@ function showApp(showActivity = false) {
   appView.classList.remove("hidden");
   hideAllForms();
 
+const promo = document.getElementById("promoMessage"); 
+if (promo) promo.classList.add("hidden"); updateDailyQuote();
+
   if (showActivity) showActivityForm();
   else drawHome();
+
 }
 
 function showActivityForm() {
@@ -679,7 +767,7 @@ for (const a of list) {
 
     // TODAY
     const todayLabel = formatShortDateFromDate(today);
-    append(`TODAY — ${todayLabel}`);
+    append(`<strong>TODAY — ${todayLabel}</strong>`);
     if (groups.today.length) {
       appendGroup("", groups.today, false);
     } else {
@@ -691,15 +779,15 @@ for (const a of list) {
     if (groups.yesterday.length) {
       const y = new Date(today.getTime() - dayMs);
       const yLabel = formatShortDateFromDate(y);
-      append(`YESTERDAY — ${yLabel}`);
+      append(`<strong>YESTERDAY — ${yLabel}</strong>`);
       appendGroup("", groups.yesterday, false);
     }
 
     // LAST 7 DAYS (2–7 days ago)
-    appendGroup("LAST 7 DAYS", groups.last7, true);
+    appendGroup("<strong>LAST 7 DAYS</strong>", groups.last7, true);
 
     // OLDER
-    appendGroup("OLDER", groups.older, true);
+    appendGroup("<strong>OLDER</strong>", groups.older, true);
 
     screen.innerHTML = html;
 
@@ -864,6 +952,58 @@ async function showStatistics() {
     // --- NEW: streak calculation ---
     const { currentStreak, bestStreak } = calculateStreaks(list);
 
+// --- TOTAL TIME MOVING ---
+let totalMinutes = 0;
+for (const a of list) {
+  totalMinutes += Number(a.duration || 0);
+}
+
+// --- TOP DAY ---
+const dayTotals = {}; // { "2026-01-14": 45, ... }
+for (const a of list) {
+  const date = a.date.trim().slice(0, 10);
+  if (!dayTotals[date]) dayTotals[date] = 0;
+  dayTotals[date] += Number(a.duration || 0);
+}
+
+let topDay = null;
+let topDayMinutes = 0;
+for (const [date, mins] of Object.entries(dayTotals)) {
+  if (mins > topDayMinutes) {
+    topDayMinutes = mins;
+    topDay = date;
+  }
+}
+
+// --- TOP WEEK ---
+const sortedDates = Object.keys(dayTotals).sort(); // oldest → newest
+let topWeekMinutes = 0;
+let topWeekStart = null;
+
+for (let i = 0; i < sortedDates.length; i++) {
+  let weekTotal = 0;
+  const start = sortedDates[i];
+
+  const startIndex = new Date(start).getTime() / 86400000;
+
+  for (let j = i; j < sortedDates.length; j++) {
+    const d = sortedDates[j];
+    const dayIndex = new Date(d).getTime() / 86400000;
+
+    if (dayIndex - startIndex <= 6) {
+      weekTotal += dayTotals[d];
+    } else {
+      break;
+    }
+  }
+
+  if (weekTotal > topWeekMinutes) {
+    topWeekMinutes = weekTotal;
+    topWeekStart = start;
+  }
+}
+
+
     const totals = {}; // { type: { minutes, distance } }
 
     for (const a of list) {
@@ -881,15 +1021,22 @@ async function showStatistics() {
     const rows = Object.entries(totals)
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
-      const lines = [
-        ("STREAKS"),
-        "",
-        (`Current streak: ${currentStreak} day(s)`), 
-        (`Best streak: ${bestStreak} day(s)`),
-        "",
-        ("TOTALS BY TYPE"),
-        ""
-      ];
+const lines = [
+  "<strong>STREAKS</strong>",
+  "",
+  `Current streak: ${currentStreak} day(s)`,
+  `Best streak: ${bestStreak} day(s)`,
+  "",
+  "<strong>MOVEMENT TOTALS</strong>",
+  "",
+  `Total time moving: ${totalMinutes} min`,
+  `Top day: ${topDayMinutes} min`,
+  `Top week: ${topWeekMinutes} min`,
+  "",
+  "<strong>TOTALS BY TYPE</strong>",
+  ""
+];
+
 
 
       for (const [type, t] of rows) {
@@ -915,6 +1062,7 @@ async function showStatistics() {
 
 /* BOOT */
 auth.onAuthStateChanged(async (user) => {
+updateDailyQuote();
   if (store.authBusy) return;
 
   if (user) {
