@@ -101,6 +101,15 @@ function formatShortDateFromDate(d) {
   });
 }
 
+function formatShortDatePretty(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
+
 
 
 function getLocalDateString() {
@@ -135,24 +144,21 @@ function calculateStreaks(list) {
   const todayStr = getLocalDateString();
   const todayDays = daysFromDateString(todayStr);
 
-  // ---- CURRENT STREAK: must start from today ----
-  let currentStreak = 0;
-  let expected = todayDays;
+ // ---- CURRENT STREAK: must start from the most recent activity ----
+let currentStreak = 1; // at least 1 day because you have at least one activity
+let expected = daysFromDateString(uniqueDates[0]); // start at most recent activity
 
-  for (const dateStr of uniqueDates) {
-    const dayIndex = daysFromDateString(dateStr);
+for (let i = 1; i < uniqueDates.length; i++) {
+  const dayIndex = daysFromDateString(uniqueDates[i]);
 
-    if (dayIndex === expected) {
-      currentStreak++;
-      expected--;
-    } else if (dayIndex < expected) {
-      // gap before today → streak is broken
-      break;
-    } else {
-      // date in the future or duplicate — ignore
-      continue;
-    }
+  if (dayIndex === expected - 1) {
+    currentStreak++;
+    expected = dayIndex;
+  } else {
+    break;
   }
+}
+
 
   // ---- BEST STREAK: longest run anywhere ----
   let bestStreak = 0;
@@ -490,17 +496,19 @@ addActivityBtn.addEventListener("click", async () => {
       return;
     }
 
-    // ADD
-    await activitiesRef(uid).add({
-      ...payload,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+// ADD
+await activitiesRef(uid).add({
+  ...payload,
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
 
-    const distEl = document.getElementById("activityDistance");
-    if (distEl) distEl.value = "";
+const distEl = document.getElementById("activityDistance");
+if (distEl) distEl.value = "";
 
-    hideAllForms();
-    print("Activity logged.");
+// Jump directly to statistics
+hideAllForms();
+showStatistics("Activity logged.");
+
 
   } catch (err) {
     console.error(err);
@@ -657,7 +665,8 @@ for (const a of list) {
       if (title) append(title);
 
       for (const a of arr) {
-        const dateLabel = formatShortDateFromString(a.date);
+        const dateLabel = formatShortDatePretty(a.date);
+
         const dist = a.distance != null && a.distance !== "" ? ` — ${a.distance}` : "";
         const notes = a.notes ? ` (${a.notes})` : "";
         const base = showDateLabel ? `${dateLabel} — ${a.type}` : a.type;
