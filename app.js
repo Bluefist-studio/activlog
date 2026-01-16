@@ -109,10 +109,6 @@ ${PROMO_FEATURES}
 }
 
 
-
-
-
-
 ////////////////////////* STORAGE */////////////////////////////////
 const store = {
   session: JSON.parse(localStorage.getItem("session")) || { userId: null, username: null },
@@ -272,6 +268,19 @@ function centerLine(text) {
 
   const pad = Math.max(0, Math.floor((maxChars - text.length) / 2));
   return " ".repeat(pad) + text;
+}
+
+function formatMinutes(min) {
+  const hours = Math.floor(min / 60);
+  const minutes = min % 60;
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours} hr ${minutes} min`;
+  }
+  if (hours > 0 && minutes === 0) {
+    return `${hours} hr`;
+  }
+  return `${minutes} min`;
 }
 
 
@@ -755,10 +764,11 @@ for (const a of list) {
       for (const a of arr) {
         const dateLabel = formatShortDatePretty(a.date);
 
-        const dist = a.distance != null && a.distance !== "" ? ` — ${a.distance}` : "";
+        const dist = a.distance != null && a.distance !== "" ? ` — ${a.distance} km`: "";
+
         const notes = a.notes ? ` (${a.notes})` : "";
         const base = showDateLabel ? `${dateLabel} — ${a.type}` : a.type;
-        const line = `&gt; ${base} — ${a.duration} min${dist}${notes}`;
+        const line = `> ${base} — ${formatMinutes(a.duration)}${dist}${notes}`;
         html += `<div class="activity-line" data-id="${a.id}">${line}</div><br>`;
       }
 
@@ -836,97 +846,6 @@ screen.addEventListener("click", (e) => {
     `<span data-confirm="no">[NO]</span>`;
 });
 
-///////////////////* REPAIR: STATISTICS *////////////////////////
-async function repairShiftedDates() {
-  const uid = store.session.userId;
-  if (!uid) {
-    print("NOT LOGGED IN.");
-    return;
-  }
-
-  print("Starting date repair...");
-
-  const snap = await activitiesRef(uid).get();
-  const updates = [];
-
-  snap.forEach(doc => {
-    const data = doc.data();
-    const dateStr = data.date;
-
-    if (!dateStr) return;
-
-    // Parse the stored date
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const stored = new Date(y, m - 1, d);
-
-    // Detect UTC shift: stored date is one day behind local date
-    const corrected = new Date(stored.getFullYear(), stored.getMonth(), stored.getDate() + 1);
-
-    // Convert back to YYYY-MM-DD
-    const fixed = [
-      corrected.getFullYear(),
-      String(corrected.getMonth() + 1).padStart(2, "0"),
-      String(corrected.getDate()).padStart(2, "0")
-    ].join("-");
-
-    // Only update if changed
-    if (fixed !== dateStr) {
-      updates.push(doc.ref.update({ date: fixed }));
-    }
-  });
-
-  await Promise.all(updates);
-
-  print(`Repaired ${updates.length} activities.`);
-  print("Date repair complete.");
-}
-
-async function repairShiftedDates2() {
-  const uid = store.session.userId;
-  if (!uid) {
-    print("NOT LOGGED IN.");
-    return;
-  }
-
-  print("Starting date repair...");
-
-  const snap = await activitiesRef(uid).get();
-  const updates = [];
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const dateStr = data.date;
-    if (!dateStr) continue;
-
-    const d = parseLocalDate(dateStr);
-
-    // Calculate diff in days
-    const diff = Math.floor((today - d) / 86400000);
-
-    // Only fix entries that are exactly 1 day behind
-    if (diff === 1) {
-      const corrected = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-
-      const fixed = [
-        corrected.getFullYear(),
-        String(corrected.getMonth() + 1).padStart(2, "0"),
-        String(corrected.getDate()).padStart(2, "0")
-      ].join("-");
-
-      updates.push(doc.ref.update({ date: fixed }));
-    }
-  }
-
-  await Promise.all(updates);
-
-  print(`Repaired ${updates.length} activities.`);
-  print("Date repair complete.");
-}
-
-
 
 /* DISPLAY: STATISTICS */
 async function showStatistics() {
@@ -975,33 +894,46 @@ for (const [date, mins] of Object.entries(dayTotals)) {
   }
 }
 
-// --- TOP WEEK ---
-const sortedDates = Object.keys(dayTotals).sort(); // oldest → newest
-let topWeekMinutes = 0;
-let topWeekStart = null;
+// --- TRUE BEST 7-DAY CONSECUTIVE PERIOD ---
+const allDates = Object.keys(dayTotals).sort(); // oldest → newest
 
-for (let i = 0; i < sortedDates.length; i++) {
-  let weekTotal = 0;
-  const start = sortedDates[i];
+if (allDates.length > 0) {
+  // Build full date range (no gaps)
+  const startDate = new Date(allDates[0]);
+  const endDate = new Date(allDates[allDates.length - 1]);
 
-  const startIndex = new Date(start).getTime() / 86400000;
+  const fullRange = [];
+  let d = new Date(startDate);
 
-  for (let j = i; j < sortedDates.length; j++) {
-    const d = sortedDates[j];
-    const dayIndex = new Date(d).getTime() / 86400000;
+  while (d <= endDate) {
+    const key = d.toISOString().slice(0, 10);
+    fullRange.push({
+      date: key,
+      minutes: dayTotals[key] || 0
+    });
+    d.setDate(d.getDate() + 1);
+  }
 
-    if (dayIndex - startIndex <= 6) {
-      weekTotal += dayTotals[d];
-    } else {
-      break;
+  // Slide a 7-day window across the full range
+  let best7Total = 0;
+  let best7Start = null;
+
+  for (let i = 0; i <= fullRange.length - 7; i++) {
+    let sum = 0;
+    for (let j = 0; j < 7; j++) {
+      sum += fullRange[i + j].minutes;
+    }
+
+    if (sum > best7Total) {
+      best7Total = sum;
+      best7Start = fullRange[i].date;
     }
   }
 
-  if (weekTotal > topWeekMinutes) {
-    topWeekMinutes = weekTotal;
-    topWeekStart = start;
-  }
+  topWeekMinutes = best7Total;
+  topWeekStart = best7Start;
 }
+
 
 
     const totals = {}; // { type: { minutes, distance } }
@@ -1029,9 +961,9 @@ const lines = [
   "",
   "<strong>MOVEMENT TOTALS</strong>",
   "",
-  `Total time moving: ${totalMinutes} min`,
-  `Top day: ${topDayMinutes} min`,
-  `Top week: ${topWeekMinutes} min`,
+  `Total time moving: ${formatMinutes(totalMinutes)}`,
+  `Top day: ${formatMinutes(topDayMinutes)}`,
+  `Top week: ${formatMinutes(topWeekMinutes)}`,
   "",
   "<strong>TOTALS BY TYPE</strong>",
   ""
@@ -1040,7 +972,7 @@ const lines = [
 
 
       for (const [type, t] of rows) {
-        const minutes = `${t.minutes} Min`;
+        const minutes = formatMinutes(t.minutes);
         const distance = t.distance ? `${t.distance.toFixed(2)} Km` : "";
         const line = distance
           ? `${type} - ${minutes} - ${distance}`
