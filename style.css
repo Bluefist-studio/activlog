@@ -50,6 +50,49 @@ body {
   margin-top: 8px;
 }
 
+#dailyQuote {
+  font-size: 1em;        /* adjust size */
+  font-weight: 600;      /* 300 = light, 600 = semi-bold */
+  margin-top: 10px;      /* space below the logo */
+  margin-bottom: 25px;   /* space above the promo message */
+  text-align: center;    /* optional */
+  color: #00ff66;           /* optional */
+}
+
+
+#promoMessage * {
+  margin: 0;
+  padding: 0;
+}
+
+#promoMessage {
+  margin-top: 20px;
+margin-bottom: 40px;
+}
+
+.promo-headline {
+  font-size: 0.85em;
+  font-weight: normal;
+margin-top: 0px;
+margin-bottom: 0px;
+}
+
+.promo-features {
+  font-size: 0.85em;
+  line-height: 1.4;
+  margin-top: -10px;
+margin-bottom: -10px;
+  white-space: pre-wrap;
+}
+
+.promo-paragraph {
+  font-size: 0.85em;
+  line-height: 1.4;
+  margin-top: 0px;
+  margin-bottom: 15px;
+}
+
+
 /* ---------- INPUTS ---------- */
 input {
   width: 100%;
@@ -181,7 +224,6 @@ input::selection {
     white-space: pre-wrap;
   }
 }
-
 
 
 
