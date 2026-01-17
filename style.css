@@ -50,6 +50,13 @@ body {
   margin-top: 8px;
 }
 
+
+.friend-details {
+  color: #00ff66;
+  font-family: Consolas, monospace;
+}
+
+
 #dailyQuote {
   font-size: 1em;        /* adjust size */
   font-weight: 600;      /* 300 = light, 600 = semi-bold */
