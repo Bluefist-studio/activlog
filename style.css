@@ -50,7 +50,6 @@ body {
   margin-top: 8px;
 }
 
-
 .friend-details {
   color: #00ff66;
   font-family: Consolas, monospace;
@@ -66,6 +65,10 @@ body {
   color: #00ff66;           /* optional */
 }
 
+#phyloMessage * {
+  margin: 0;
+  padding: 0;
+}
 
 #promoMessage * {
   margin: 0;
@@ -211,9 +214,18 @@ input::selection {
     padding: 12px;
   }
 
+
   .line {
     font-size: 18px;
   }
+
+.line, .friend-details, #screen {
+  font-family: Consolas, "Courier New", monospace !important;
+  white-space: pre-wrap;
+}
+
+
+
 
   #screen {
     font-size: 18px;
