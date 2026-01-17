@@ -50,25 +50,6 @@
       <button data-action="switch"> Switch User</button>
     </div>
 
-    <div id="friendsView" class="view hidden">
-
-  <div class="line">FRIENDS:</div>
-  <div id="friendsList"></div>
-
-  <div class="line" style="margin-top:12px;">ADD FRIEND (USERNAME):</div>
-  <input id="friendSearch" autocomplete="off">
-  <button id="addFriendBtn">Add Friend</button>
-
-  <div class="line" style="margin-top:12px;">VIEW:</div>
-  <div id="friendTabs">
-    <button data-ftab="today">Today</button>
-    <button data-ftab="history">History</button>
-    <button data-ftab="stats">Stats</button>
-  </div>
-
-  <div id="friendScreen" style="margin-top:12px;"></div>
-</div>
-
 
     <div id="screen"></div>
 
@@ -93,6 +74,12 @@
   <button id="deleteActivityBtn" class="hidden">Delete Activity</button>
   <button id="cancelActivityBtn">Cancel</button>
 </div>
+
+<div id="friendControls" class="hidden">
+  <input id="friendUsername" placeholder="Enter username">
+  <button onclick="addFriendByUsername()">Add Friend</button>
+</div>
+
 
 
     <!-- Profile Form -->
