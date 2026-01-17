@@ -283,6 +283,12 @@ function formatMinutes(min) {
   return `${minutes} min`;
 }
 
+async function findUserByUsername(username) {
+  const usersRef = firebase.firestore().collection("users");
+  const snap = await usersRef.where("username", "==", username).limit(1).get();
+  if (snap.empty) return null;
+  return { uid: snap.docs[0].id, ...snap.docs[0].data() };
+}
 
 
 //////////////////////////////* VIEWS *////////////////////////////
@@ -291,6 +297,17 @@ function hideAllForms() {
   profileForm.classList.add("hidden");
   if (deleteForm) deleteForm.classList.add("hidden"); // keep old form hidden
 }
+
+function hideAllViews() {
+  document.getElementById("todayMenu")?.classList.add("hidden");
+  document.getElementById("yesterdayMenu")?.classList.add("hidden");
+  document.getElementById("historyMenu")?.classList.add("hidden");
+  document.getElementById("statsMenu")?.classList.add("hidden");
+  document.getElementById("friendsMenu")?.classList.add("hidden");
+document.getElementById("friendControls").classList.add("hidden");
+
+}
+
 
 function showLogin() {
   hideAllForms();
@@ -372,11 +389,7 @@ function openEditActivity(activity) {
   if (deleteActivityBtn) deleteActivityBtn.classList.remove("hidden");
 }
 
-function showFriends() {
-  hideAllForms();
-  screen.textContent = "";
-  print("This feature is under construction.");
-}
+
 
 
 function showProfileForm() {
@@ -504,6 +517,7 @@ menu.addEventListener("click", e => {
   if (!action) return;
 
   hideAllForms();
+hideAllViews();
   screen.textContent = "";
 
   switch (action) {
@@ -688,6 +702,201 @@ if (deleteActivityBtn) {
     }
   });
 }
+
+/////////////////////////*FRIENDS*////////////////////////////////////////
+
+async function showFriends() {
+  hideAllForms();
+  screen.textContent = "";
+
+  const followingHtml = await renderFollowingList();
+  const followerCount = await getFollowerCount();
+
+  // Add spacing using extra \n lines
+  screen.innerHTML =
+    `Your Followers: ${followerCount}\n\n` +
+    "Following:\n" +
+    followingHtml +
+    "\n" +
+    "\nAdd Friend:\n";
+
+  // Show input + button
+  document.getElementById("friendControls").classList.remove("hidden");
+
+  // Convert lines into <div> elements
+  const lines = screen.innerText.split("\n");
+  screen.innerHTML = "";
+
+  lines.forEach(line => {
+    const div = document.createElement("div");
+    div.classList.add("line");
+    div.textContent = line;
+
+    // Make friend names clickable
+    if (line.startsWith("> ")) {
+      const username = line.replace("> ", "").trim();
+      div.style.cursor = "pointer";
+      div.onclick = async () => toggleFriendDetails(div, username);
+    }
+
+    screen.appendChild(div);
+  });
+}
+
+
+async function addFriendByUsername() {
+  const nameInput = document.getElementById("friendUsername");
+  const username = nameInput.value.trim();
+  if (!username) return;
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    alert("You must be logged in.");
+    return;
+  }
+
+  // 1. Find user by username
+  const usersRef = firebase.firestore().collection("users");
+  const snap = await usersRef.where("username", "==", username).limit(1).get();
+
+  if (snap.empty) {
+    alert("No user found with that username.");
+    return;
+  }
+
+  const friendDoc = snap.docs[0];
+  const friendUid = friendDoc.id;
+
+  if (friendUid === currentUser.uid) {
+    alert("You can't follow yourself.");
+    return;
+  }
+
+  // 2. Check if already following
+  const followsRef = firebase.firestore().collection("follows");
+  const existing = await followsRef
+    .where("followerUid", "==", currentUser.uid)
+    .where("followingUid", "==", friendUid)
+    .limit(1)
+    .get();
+
+  if (!existing.empty) {
+    alert("You already follow this user.");
+    return;
+  }
+
+  // 3. Create follow document
+  await followsRef.add({
+    followerUid: currentUser.uid,
+    followingUid: friendUid,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  nameInput.value = "";
+  loadFollowingList();
+  loadFollowerCount();
+}
+
+
+async function renderFollowingList() {
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) return "No user logged in.\n";
+
+  const followsRef = firebase.firestore().collection("follows");
+  const snap = await followsRef
+    .where("followerUid", "==", currentUser.uid)
+    .get();
+
+  if (snap.empty) return "No friends yet.\n";
+
+  const followingUids = snap.docs.map(d => d.data().followingUid);
+  const usersRef = firebase.firestore().collection("users");
+
+  const chunks = [];
+  while (followingUids.length) {
+    chunks.push(followingUids.splice(0, 10));
+  }
+
+  const friends = [];
+  for (const chunk of chunks) {
+    const q = await usersRef
+      .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
+      .get();
+
+    q.forEach(doc => {
+      friends.push({ uid: doc.id, ...doc.data() });
+    });
+  }
+
+  return friends.map(f => `> ${f.username}`).join("\n");
+}
+
+
+async function getFollowerCount() {
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) return 0;
+
+  const followsRef = firebase.firestore().collection("follows");
+  const snap = await followsRef
+    .where("followingUid", "==", currentUser.uid)
+    .get();
+
+  return snap.size;
+}
+
+
+async function getUserActivities(uid) {
+  const ref = firebase.firestore()
+    .collection("users")
+    .doc(uid)
+    .collection("activities");
+
+  const snap = await ref.get();
+  const list = [];
+  snap.forEach(doc => list.push(doc.data()));
+  return list;
+}
+
+
+async function toggleFriendDetails(lineElement, username) {
+  // If already expanded, collapse it
+  if (lineElement.nextSibling && lineElement.nextSibling.classList.contains("friend-details")) {
+    lineElement.nextSibling.remove();
+    return;
+  }
+
+  // Otherwise expand it
+  const friend = await findUserByUsername(username);
+  if (!friend) return;
+
+  const activities = await getUserActivities(friend.uid);
+
+  const todayHtml = renderToday(activities);
+  const yesterdayHtml = renderYesterday(activities);
+  const statsHtml = renderStats(activities);
+
+  const details = document.createElement("div");
+  details.classList.add("friend-details");
+  details.style.marginLeft = "20px";   // indent under the name
+  details.style.whiteSpace = "pre-wrap";
+  details.style.marginTop = "5px";
+  details.style.marginBottom = "10px";
+
+  details.textContent =
+    `Today:\n${todayHtml}\n\n` +
+    `Yesterday:\n${yesterdayHtml}\n\n` +
+    `Stats:\n${statsHtml}`;
+
+  // Insert right under the friend name
+  lineElement.insertAdjacentElement("afterend", details);
+}
+
+
+function renderToday(list) { /* filter by today, build HTML */ }
+function renderYesterday(list) { /* filter by yesterday */ }
+function renderStats(list) { /* your stats logic, but using passed list */ }
+
+
 
 ///////////////////////////* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) *////////////////////////////
 async function showHistory() {
