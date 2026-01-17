@@ -34,6 +34,8 @@ const saveProfileBtn = document.getElementById("saveProfileBtn");
 const deleteForm = document.getElementById("deleteForm"); // kept only to keep it hidden
 const deleteActivityBtn = document.getElementById("deleteActivityBtn");
 
+const friendUidMap = {};
+
 ////////////////*QUOTES*////////////////////
 
 const MOTIVATION_QUOTES = [
@@ -68,7 +70,9 @@ function updateDailyQuote() {
 }
 
 const PROMO_MESSAGE = `
-ActivLog is the simple, manual activity log for real people who want to stay aware of their daily movement without fitness pressure, metrics overload, or automatic tracking.
+Any move is a good move. ActivLog helps you capture them, build momentum, and keep going.
+<div></div>
+Simple, manual activity logging for real people who want to stay aware of their daily movement without fitness pressure, metrics overload, or automatic tracking.
 `;
 
 const PROMO_FEATURES = `
@@ -85,13 +89,7 @@ Anti overwhelm appeal
 • No GPS, no sensors, no complicated graphs—just clean, simple activity logging you control.
 `;
 
-const PROMO_PARAGRAPH = `
-ActivLog is a lightweight, friendly activity logger designed for people who want a simple way to stay aware of their daily movement. Unlike fitness apps that focus on tracking devices, sports metrics, or complex analytics, ActivLog puts you in control. You manually record any activity you choose—whether it’s a walk, a few push-ups, stretching, housework, yard work, or anything else that gets you moving.
-
-It’s perfect for beginners, people restarting their fitness journey, and anyone who wants to track everyday activity without pressure or clutter. Your history and basic stats give you a clear picture of your habits while keeping things relaxed and easy to understand. And with optional social features, you can share activity logs with friends and motivate each other in a supportive, low stress way.
-
-Simple, flexible, and built for real life—ActivLog helps you stay aware of your movement without trying to be a fitness coach. Just record what you did today and keep building momentum one entry at a time.
-`;
+const PROMO_PARAGRAPH = ``;
 
 function showPromoMessage() {
   const el = document.getElementById("promoMessage");
@@ -100,11 +98,9 @@ function showPromoMessage() {
   el.innerHTML = `
     <p class="promo-headline">${PROMO_MESSAGE}</p>
 
-    <div class="promo-features">
-${PROMO_FEATURES}
-    </div>
 
-    <p class="promo-paragraph">${PROMO_PARAGRAPH}</p>
+
+   <p class="promo-paragraph">${PROMO_PARAGRAPH}</p>
   `;
 }
 
@@ -204,9 +200,10 @@ function parseLocalDate(dateStr) {
 
 function calculateStreaks(list) {
   // Normalize dates to YYYY-MM-DD
-  list = list.map(a => ({ ...a, date: a.date.trim().slice(0, 10) }));
+  list = list
+    .filter(a => a.date)
+    .map(a => ({ ...a, date: a.date.trim().slice(0, 10) }));
 
-  // Extract unique dates, newest first
   const uniqueDates = [...new Set(list.map(a => a.date))].sort().reverse();
   if (!uniqueDates.length) return { currentStreak: 0, bestStreak: 0 };
 
@@ -218,21 +215,26 @@ function calculateStreaks(list) {
   const todayStr = getLocalDateString();
   const todayDays = daysFromDateString(todayStr);
 
- // ---- CURRENT STREAK: must start from the most recent activity ----
-let currentStreak = 1; // at least 1 day because you have at least one activity
-let expected = daysFromDateString(uniqueDates[0]); // start at most recent activity
+  // ---- CURRENT STREAK: must start from the most recent activity ----
+  let currentStreak = 1; // at least 1 day because you have at least one activity
+  let expected = daysFromDateString(uniqueDates[0]); // start at most recent activity
 
-for (let i = 1; i < uniqueDates.length; i++) {
-  const dayIndex = daysFromDateString(uniqueDates[i]);
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const dayIndex = daysFromDateString(uniqueDates[i]);
 
-  if (dayIndex === expected - 1) {
-    currentStreak++;
-    expected = dayIndex;
-  } else {
-    break;
+    if (dayIndex === expected - 1) {
+      currentStreak++;
+      expected = dayIndex;
+    } else {
+      break;
+    }
   }
-}
 
+  // If last activity was more than 1 day ago, current streak should be 0
+  const lastDayIndex = daysFromDateString(uniqueDates[0]);
+  if (todayDays - lastDayIndex > 1) {
+    currentStreak = 0;
+  }
 
   // ---- BEST STREAK: longest run anywhere ----
   let bestStreak = 0;
@@ -244,7 +246,7 @@ for (let i = 1; i < uniqueDates.length; i++) {
 
     if (prev === null || dayIndex === prev + 1) {
       streak++;
-    } else if (dayIndex > prev + 1) {
+    } else {
       streak = 1;
     }
     prev = dayIndex;
@@ -253,6 +255,7 @@ for (let i = 1; i < uniqueDates.length; i++) {
 
   return { currentStreak, bestStreak };
 }
+
 
 
 
@@ -283,18 +286,16 @@ function formatMinutes(min) {
   return `${minutes} min`;
 }
 
-async function findUserByUsername(username) {
-  const usersRef = firebase.firestore().collection("users");
-  const snap = await usersRef.where("username", "==", username).limit(1).get();
-  if (snap.empty) return null;
-  return { uid: snap.docs[0].id, ...snap.docs[0].data() };
-}
+
 
 
 //////////////////////////////* VIEWS *////////////////////////////
 function hideAllForms() {
   activityForm.classList.add("hidden");
   profileForm.classList.add("hidden");
+screen.classList.remove("friends-screen");
+document.getElementById("friendControls").classList.add("hidden");
+
   if (deleteForm) deleteForm.classList.add("hidden"); // keep old form hidden
 }
 
@@ -571,7 +572,13 @@ addActivityBtn.addEventListener("click", async () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
   const notes = activityNotes.value.trim();
-  const date = activityDate.value || new Date().toISOString().slice(0, 10);
+
+  // Raw date from input OR today
+  let rawDate = activityDate.value || new Date().toISOString().slice(0, 10);
+
+  // Normalize to YYYY-MM-DD (local date, no time, no timezone issues)
+  const d = new Date(rawDate);
+  const date = d.toISOString().slice(0, 10);
 
   if (!type || !duration) {
     print("FILL ACTIVITY AND MINUTES.");
@@ -585,7 +592,7 @@ addActivityBtn.addEventListener("click", async () => {
   const distance = distanceRaw ? Number(distanceRaw) : null;
 
   const payload = {
-    date,
+    date,                 // ← normalized date
     type,
     duration: Number(duration),
     distance,
@@ -603,29 +610,28 @@ addActivityBtn.addEventListener("click", async () => {
 
       hideAllForms();
       print("Activity updated.");
-      await showHistory(); // refresh after update
+      await showHistory();
       return;
     }
 
-// ADD
-await activitiesRef(uid).add({
-  ...payload,
-  createdAt: firebase.firestore.FieldValue.serverTimestamp()
-});
+    // ADD
+    await activitiesRef(uid).add({
+      ...payload,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-const distEl = document.getElementById("activityDistance");
-if (distEl) distEl.value = "";
+    const distEl = document.getElementById("activityDistance");
+    if (distEl) distEl.value = "";
 
-// Jump directly to statistics
-hideAllForms();
-showStatistics("Activity logged.");
-
+    hideAllForms();
+    showStatistics("Activity logged.");
 
   } catch (err) {
     console.error(err);
     print(`SAVE FAILED: ${err.code || ""} ${err.message || err}`);
   }
 });
+
 
 cancelActivityBtn.addEventListener("click", async () => {
   const wasEditing = !!store.editingActivity;
@@ -705,43 +711,66 @@ if (deleteActivityBtn) {
 
 /////////////////////////*FRIENDS*////////////////////////////////////////
 
+screen.classList.add("friends-screen");
+
 async function showFriends() {
   hideAllForms();
   screen.textContent = "";
+document.getElementById("friendControls").classList.remove("hidden");
 
-  const followingHtml = await renderFollowingList();
-  const followerCount = await getFollowerCount();
+const followingHtml = await renderFollowingList();
+const followerCount = await getFollowerCount();
 
-  // Add spacing using extra \n lines
-  screen.innerHTML =
-    `Your Followers: ${followerCount}\n\n` +
-    "Following:\n" +
-    followingHtml +
-    "\n" +
-    "\nAdd Friend:\n";
+// Count how many people you follow
+const followingCount = followingHtml.trim() === "" ? 0 : followingHtml.split("\n").length;
 
-  // Show input + button
-  document.getElementById("friendControls").classList.remove("hidden");
+// Clear screen
+screen.innerHTML = "";
 
-  // Convert lines into <div> elements
-  const lines = screen.innerText.split("\n");
-  screen.innerHTML = "";
 
-  lines.forEach(line => {
-    const div = document.createElement("div");
-    div.classList.add("line");
-    div.textContent = line;
 
-    // Make friend names clickable
-    if (line.startsWith("> ")) {
-      const username = line.replace("> ", "").trim();
-      div.style.cursor = "pointer";
-      div.onclick = async () => toggleFriendDetails(div, username);
-    }
+// FOLLOWERS title
+const followersTitle = document.createElement("div");
+followersTitle.innerHTML = `<strong>FOLLOWERS:</strong> ${followerCount}`;
+followersTitle.style.marginBottom = "28px";
+screen.appendChild(followersTitle);
 
-    screen.appendChild(div);
-  });
+// FOLLOWING title
+const followingTitle = document.createElement("div");
+followingTitle.innerHTML = `<strong>FOLLOWING:</strong> ${followingCount}`;
+followingTitle.style.marginTop = "28px";
+followingTitle.style.marginBottom = "12px";
+screen.appendChild(followingTitle);
+
+// Following list
+const lines = followingHtml.split("\n");
+lines.forEach(line => {
+  if (!line.trim()) return;
+
+  const div = document.createElement("div");
+  div.classList.add("line");
+  div.textContent = line;
+
+  if (line.trim().startsWith(">")) {
+    const username = line.trim().replace(/^>\s*/, "");
+    div.style.cursor = "pointer";
+    div.onclick = () => toggleFriendDetails(div, username);
+  }
+
+  screen.appendChild(div);
+});
+
+// FOLLOW title
+const followTitle = document.createElement("div");
+followTitle.innerHTML = `<strong></strong>`;
+followTitle.style.marginTop = "32px";
+followTitle.style.marginBottom = "12px";
+screen.appendChild(followTitle);
+
+
 }
+
+
 
 
 async function addFriendByUsername() {
@@ -793,8 +822,8 @@ async function addFriendByUsername() {
   });
 
   nameInput.value = "";
-  loadFollowingList();
-  loadFollowerCount();
+await showFriends();
+
 }
 
 
@@ -812,9 +841,10 @@ async function renderFollowingList() {
   const followingUids = snap.docs.map(d => d.data().followingUid);
   const usersRef = firebase.firestore().collection("users");
 
+  // Do NOT mutate followingUids — use slice instead
   const chunks = [];
-  while (followingUids.length) {
-    chunks.push(followingUids.splice(0, 10));
+  for (let i = 0; i < followingUids.length; i += 10) {
+    chunks.push(followingUids.slice(i, i + 10));
   }
 
   const friends = [];
@@ -824,12 +854,18 @@ async function renderFollowingList() {
       .get();
 
     q.forEach(doc => {
-      friends.push({ uid: doc.id, ...doc.data() });
+      const data = { uid: doc.id, ...doc.data() };
+      friends.push(data);
+
+      // Populate the UID map
+      friendUidMap[data.username] = data.uid;
+console.log("friendUidMap:", friendUidMap);
     });
   }
 
   return friends.map(f => `> ${f.username}`).join("\n");
 }
+
 
 
 async function getFollowerCount() {
@@ -859,6 +895,9 @@ async function getUserActivities(uid) {
 
 
 async function toggleFriendDetails(lineElement, username) {
+
+console.log("toggleFriendDetails called for:", username);
+
   // If already expanded, collapse it
   if (lineElement.nextSibling && lineElement.nextSibling.classList.contains("friend-details")) {
     lineElement.nextSibling.remove();
@@ -866,39 +905,88 @@ async function toggleFriendDetails(lineElement, username) {
   }
 
   // Otherwise expand it
-  const friend = await findUserByUsername(username);
-  if (!friend) return;
+  const uid = friendUidMap[username];
+  if (!uid) return;
 
-  const activities = await getUserActivities(friend.uid);
+  const activities = await getUserActivities(uid);
 
-  const todayHtml = renderToday(activities);
-  const yesterdayHtml = renderYesterday(activities);
   const statsHtml = renderStats(activities);
 
   const details = document.createElement("div");
   details.classList.add("friend-details");
-  details.style.marginLeft = "20px";   // indent under the name
+  details.style.marginLeft = "20px";
   details.style.whiteSpace = "pre-wrap";
   details.style.marginTop = "5px";
   details.style.marginBottom = "10px";
 
-  details.textContent =
-    `Today:\n${todayHtml}\n\n` +
-    `Yesterday:\n${yesterdayHtml}\n\n` +
-    `Stats:\n${statsHtml}`;
+  details.textContent = `${statsHtml}`;
 
-  // Insert right under the friend name
   lineElement.insertAdjacentElement("afterend", details);
 }
 
 
-function renderToday(list) { /* filter by today, build HTML */ }
-function renderYesterday(list) { /* filter by yesterday */ }
-function renderStats(list) { /* your stats logic, but using passed list */ }
+
+function renderStats(list) {
+  if (!list || list.length === 0) {
+    return "No stats available.";
+  }
+
+  //////////////////////////*STREAKS*/////////////////////////////////
+const { currentStreak, bestStreak } = calculateStreaks(list);
+
+function getMinutes(a) {
+  return a.minutes ?? a.amount ?? a.duration ?? a.time ?? 0;
+}
+
+
+  // --- MOVEMENT TOTALS ---
+  const totalMinutes = list.reduce((sum, a) => sum + getMinutes(a), 0);
+
+  const dayTotals = {};
+  list.forEach(a => {
+    const day = new Date(a.date).toDateString();
+    dayTotals[day] = (dayTotals[day] || 0) + getMinutes(a);
+  });
+
+  const topDayMinutes = Math.max(...Object.values(dayTotals));
+
+  const weekTotals = {};
+  list.forEach(a => {
+    const d = new Date(a.date);
+    const week = `${d.getFullYear()}-W${Math.ceil((d.getDate() - d.getDay() + 1) / 7)}`;
+    weekTotals[week] = (weekTotals[week] || 0) + getMinutes(a);
+  });
+
+  const topWeekMinutes = Math.max(...Object.values(weekTotals));
+
+  // --- TOTALS BY TYPE ---
+  const typeTotals = {};
+  list.forEach(a => {
+    typeTotals[a.type] = (typeTotals[a.type] || 0) + getMinutes(a);
+  });
+
+  // --- BUILD OUTPUT ---
+  let output = "";
+
+  output += `Current streak: ${currentStreak} day(s)\n`;
+  output += `Best streak: ${bestStreak} day(s)\n`;
+
+  output += `Total time moving: ${formatMinutes(totalMinutes)}\n`;
+  output += `Top day: ${formatMinutes(topDayMinutes)}\n`;
+  output += `Top week: ${formatMinutes(topWeekMinutes)}\n`;
+
+  Object.keys(typeTotals).forEach(type => {
+    output += `${type}: ${formatMinutes(typeTotals[type])}\n`;
+  });
+
+  return output.trim();
+}
 
 
 
-///////////////////////////* DISPLAY: HISTORY (TODAY / YESTERDAY / LAST 7 DAYS / OLDER) *////////////////////////////
+
+
+///////////////////////////* DISPLAY: HISTORY *////////////////////////////
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
@@ -1056,7 +1144,7 @@ screen.addEventListener("click", (e) => {
 });
 
 
-/* DISPLAY: STATISTICS */
+////////////////////////* DISPLAY: STATISTICS *//////////////////////
 async function showStatistics() {
 
   hideAllForms();
@@ -1103,7 +1191,7 @@ for (const [date, mins] of Object.entries(dayTotals)) {
   }
 }
 
-// --- TRUE BEST 7-DAY CONSECUTIVE PERIOD ---
+// --- 7-DAY CONSECUTIVE PERIOD ---
 const allDates = Object.keys(dayTotals).sort(); // oldest → newest
 
 if (allDates.length > 0) {
@@ -1143,8 +1231,6 @@ if (allDates.length > 0) {
   topWeekStart = best7Start;
 }
 
-
-
     const totals = {}; // { type: { minutes, distance } }
 
     for (const a of list) {
@@ -1179,7 +1265,6 @@ const lines = [
 ];
 
 
-
       for (const [type, t] of rows) {
         const minutes = formatMinutes(t.minutes);
         const distance = t.distance ? `${t.distance.toFixed(2)} Km` : "";
@@ -1188,8 +1273,6 @@ const lines = [
           : `${type} - ${minutes}`;
         lines.push(line);
       }
-
-
 
 
     print(lines.join("\n"));
@@ -1201,7 +1284,10 @@ const lines = [
 }
 
 
-/* BOOT */
+
+
+
+//////////////////////////* BOOT */////////////////////////////
 auth.onAuthStateChanged(async (user) => {
 updateDailyQuote();
   if (store.authBusy) return;
