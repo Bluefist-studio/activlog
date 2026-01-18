@@ -39,15 +39,15 @@ const friendUidMap = {};
 ////////////////*QUOTES*////////////////////
 
 const MOTIVATION_QUOTES = [
-  "Every bit of movement is a step toward a healthier you.",
+  "Every bit of movement is a step foward.",
   "Small actions add up. Your body notices.",
   "It doesn’t have to be a workout — just movement.",
-  "Slow, fast, big, small — every movement matters.",
-  "A little movement today is better than none tomorrow.",
+  "Slow, fast, big, small — every thing matters.",
+  "A little movement today is better than none.",
   "Health isn’t built in the gym. It’s built in everyday moments.",
   "Move in any way you can. It all counts.",
   "Tiny efforts become real change.",
-  "You don’t need a routine. You just need to move.",
+  "You just need to move.",
   "Your body doesn’t care how you moved — just that you did."
 ];
 
@@ -287,6 +287,63 @@ function formatMinutes(min) {
 }
 
 
+/////////// health ////////////
+function calculateHealthScore(streak, minutesToday) {
+  // Convert streak to 0–100
+  const streakScore = Math.min(streak * 15, 100); // 10 days = 100%
+
+  // Convert minutes to 0–100
+  const activityScore = Math.min(minutesToday * 3, 100); // 50 min = 100%
+
+  // Blend them
+  return Math.round(streakScore * 0.4 + activityScore * 0.6);
+}
+
+async function updateHealthBar() {
+  const uid = store.session.userId;
+  if (!uid) return;
+
+  // Load activities ordered by date
+  const snap = await activitiesRef(uid)
+    .orderBy("date", "desc")
+    .get();
+
+  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  // Calculate streak
+  const { currentStreak } = calculateStreaks(list);
+
+  // Calculate today's minutes
+  let minutesToday = 0;
+  const todayStr = getLocalDateString();
+
+  for (const a of list) {
+    if (a.date.startsWith(todayStr)) {
+      minutesToday += Number(a.duration || 0);
+    }
+  }
+
+  // Calculate health score
+  const health = calculateHealthScore(currentStreak, minutesToday);
+//health = Math.max(20, health);
+
+
+  // Update bar
+  const bar = document.getElementById("healthBarFill");
+  const label = document.getElementById("healthBarLabel");
+
+  if (!bar || !label) return;
+
+  bar.style.width = health + "%";
+
+  if (health < 30) bar.style.background = "red";
+  else if (health < 70) bar.style.background = "yellow";
+  else bar.style.background = "limegreen";
+
+  label.textContent = `Health: ${health}%`;
+}
+
+
 
 
 //////////////////////////////* VIEWS *////////////////////////////
@@ -325,6 +382,9 @@ const promo = document.getElementById("promoMessage");
 
 if (promo) promo.classList.remove("hidden"); 
 showPromoMessage();
+
+document.getElementById("healthBarWrapper").style.display = "none";
+
 
 }
 
@@ -405,7 +465,7 @@ function showProfileForm() {
 function drawHome() {
   screen.textContent = "";
   const user = currentUser();
-  print(`USER: ${user.username}\n\nSelect an option.`);
+  print(`USER: ${user.username}\n\nUser name updated.`);
 }
 
 ///////////////////////////////* LOGIN *///////////////////////////////////////
@@ -563,8 +623,9 @@ hideAllViews();
         store.switchConfirm = true;
         print("Press 'Switch User' again to confirm logout.");
       }
-      break;
+      return;
   }
+document.getElementById("healthBarWrapper").style.display = "block"; updateHealthBar();
 });
 
 /* ACTIVITY FORM (ADD OR UPDATE) */
@@ -649,37 +710,88 @@ cancelActivityBtn.addEventListener("click", async () => {
   }
 });
 
-/* PROFILE SAVE (PIN change only) */
-saveProfileBtn.addEventListener("click", () => {
+///* PROFILE SAVE (PIN change only) *///
+
+saveProfileBtn.addEventListener("click", async () => {
   const requestedUsername = normalizeUsername(profileUsername.value);
   const current = normalizeUsername(store.session.username || "");
   const newPin = profilePin.value.trim();
+  const uid = store.session.userId;
 
-  if (requestedUsername && requestedUsername !== current) {
-    print("USERNAME CHANGE NOT AVAILABLE YET.");
-    profileUsername.value = store.session.username || "";
-    profilePin.value = "";
+  if (!uid) {
+    print("NOT LOGGED IN.");
     return;
   }
 
-  if (!newPin) {
-    print("PROFILE UPDATED.");
+  // If username is unchanged, only handle PIN
+  if (requestedUsername === current) {
+    if (!newPin) {
+      print("PROFILE UPDATED.");
+      hideAllForms();
+      drawHome();
+      return;
+    }
+
+    try {
+      await auth.currentUser.updatePassword(newPin);
+      print("PROFILE UPDATED.");
+    } catch (_) {
+      print("PIN CHANGE REQUIRES RE-LOGIN.");
+    }
+
     hideAllForms();
     drawHome();
     return;
   }
 
-  auth.currentUser.updatePassword(newPin)
-    .then(() => {
-      print("PROFILE UPDATED.");
-      hideAllForms();
-      drawHome();
-    })
-    .catch(() => {
-      print("PIN CHANGE REQUIRES RE-LOGIN.");
-      hideAllForms();
-      drawHome();
+  // Username changed — validate
+  const v = validateUsername(requestedUsername);
+  if (v) {
+    print(v);
+    profileUsername.value = store.session.username || "";
+    return;
+  }
+
+  // Firestore references
+  const oldNameRef = db.collection("usernames").doc(current);
+  const newNameRef = db.collection("usernames").doc(requestedUsername);
+  const userRef = db.collection("users").doc(uid);
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const newSnap = await tx.get(newNameRef);
+      if (newSnap.exists) throw new Error("USERNAME_TAKEN");
+
+      // Remove old username index
+      tx.delete(oldNameRef);
+
+      // Create new username index
+      tx.set(newNameRef, {
+        uid,
+        changedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Update user document
+      tx.update(userRef, { username: requestedUsername });
     });
+
+    // Update session
+    store.session.username = requestedUsername;
+    save();
+
+    print("USERNAME UPDATED.");
+    hideAllForms();
+    drawHome();
+
+  } catch (e) {
+    if (e.message === "USERNAME_TAKEN") {
+      print("USERNAME TAKEN.");
+    } else {
+      print("USERNAME CHANGE FAILED.");
+    }
+
+    profileUsername.value = store.session.username || "";
+  }
 });
 
 /* DELETE ACTIVITY (from edit form) */
@@ -766,13 +878,9 @@ followTitle.innerHTML = `<strong></strong>`;
 followTitle.style.marginTop = "32px";
 followTitle.style.marginBottom = "12px";
 screen.appendChild(followTitle);
-
-
 }
 
-
-
-
+// FOLLOW //
 async function addFriendByUsername() {
   const nameInput = document.getElementById("friendUsername");
   const username = nameInput.value.trim();
@@ -824,6 +932,50 @@ async function addFriendByUsername() {
   nameInput.value = "";
 await showFriends();
 
+}
+
+// UNFOLLOW //
+
+async function unfollowByUsername() {
+  const nameInput = document.getElementById("friendUsername");
+  const username = nameInput.value.trim();
+  if (!username) return;
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    alert("You must be logged in.");
+    return;
+  }
+
+  // 1. Find user by username
+  const usersRef = firebase.firestore().collection("users");
+  const snap = await usersRef.where("username", "==", username).limit(1).get();
+
+  if (snap.empty) {
+    alert("No user found with that username.");
+    return;
+  }
+
+  const friendUid = snap.docs[0].id;
+
+  // 2. Find follow relationship
+  const followsRef = firebase.firestore().collection("follows");
+  const existing = await followsRef
+    .where("followerUid", "==", currentUser.uid)
+    .where("followingUid", "==", friendUid)
+    .limit(1)
+    .get();
+
+  if (existing.empty) {
+    alert("You are not following this user.");
+    return;
+  }
+
+  // 3. Delete follow document
+  await followsRef.doc(existing.docs[0].id).delete();
+
+  nameInput.value = "";
+  await showFriends();
 }
 
 
@@ -1300,6 +1452,10 @@ updateDailyQuote();
 
     save();
     showApp(true);
+
+document.getElementById("healthBarWrapper").style.display = "block"; 
+updateHealthBar();
+
   } else {
     store.session.userId = null;
     store.session.username = null;
