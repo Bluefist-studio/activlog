@@ -244,6 +244,27 @@ input::selection {
   }
 }
 
+#healthBarContainer {
+  width: 100%;
+  height: 20px;
+  background: #333;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+#healthBarFill {
+  height: 100%;
+  width: 0%;
+  background: red;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+#healthBarLabel {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
 
 
 
