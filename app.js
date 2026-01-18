@@ -289,6 +289,7 @@ function formatMinutes(min) {
 
 /////////// health ////////////
 function calculateHealthScore(streak, minutesToday) {
+
   // Convert streak to 0–100
   const streakScore = Math.min(streak * 15, 100); // 10 days = 100%
 
@@ -333,12 +334,21 @@ async function updateHealthBar() {
   const label = document.getElementById("healthBarLabel");
 
   if (!bar || !label) return;
+document.getElementById("healthBarWrapper").style.display = "block";
+
 
   bar.style.width = health + "%";
 
-  if (health < 30) bar.style.background = "red";
-  else if (health < 70) bar.style.background = "yellow";
-  else bar.style.background = "#00aa44";
+bar.classList.remove("low", "mid", "high");
+
+if (health < 30) {
+  bar.classList.add("low");
+} else if (health < 70) {
+  bar.classList.add("mid");
+} else {
+  bar.classList.add("high");
+}
+
 
   label.textContent = `Health: ${health}%`;
 }
@@ -664,7 +674,7 @@ addActivityBtn.addEventListener("click", async () => {
     if (store.editingActivity && store.editingActivity.id) {
       // UPDATE
       await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
-
+	updateHealthBar();
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
       if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
@@ -805,6 +815,7 @@ if (deleteActivityBtn) {
 
     try {
       await activitiesRef(uid).doc(a.id).delete();
+updateHealthBar();
 
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
@@ -1301,6 +1312,7 @@ async function showStatistics() {
 
   hideAllForms();
   screen.textContent = "";
+updateHealthBar();
 
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
@@ -1474,4 +1486,3 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
-
