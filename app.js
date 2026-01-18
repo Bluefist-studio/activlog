@@ -338,7 +338,7 @@ async function updateHealthBar() {
 
   if (health < 30) bar.style.background = "red";
   else if (health < 70) bar.style.background = "yellow";
-  else bar.style.background = "limegreen";
+  else bar.style.background = "#00aa44";
 
   label.textContent = `Health: ${health}%`;
 }
@@ -1474,3 +1474,4 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
