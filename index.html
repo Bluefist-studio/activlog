@@ -22,6 +22,8 @@
 <div id="promoMessage" class="promo"></div>
 
 
+
+
   <!-- LOGIN/CREATE VIEW -->
   <div id="loginView" class="view">
     <div class="line">USERNAME:</div>
@@ -49,6 +51,15 @@
       <button data-action="profile"> Profile</button>
       <button data-action="switch"> Switch User</button>
     </div>
+
+
+<div id="healthBarWrapper" style="display:none; margin-bottom: 10px;">
+  <div id="healthBarContainer">
+    <div id="healthBarFill"></div>
+  </div>
+  <div id="healthBarLabel"></div>
+</div>
+
 
 
     <div id="screen"></div>
@@ -79,7 +90,10 @@
 <div id="friendControls" class="hidden">
   <input id="friendUsername" placeholder="Enter username">
   <button onclick="addFriendByUsername()">Follow</button>
+<button onclick="unfollowByUsername()">Unfollow</button>
 </div>
+
+
 
 
 
