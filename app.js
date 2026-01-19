@@ -122,7 +122,7 @@ function save() {
 ///////////////////////* HELPERS *////////////////////////////////
 
 function print(text = "") {
-  screen.innerHTML += String(text).replace(/\n/g, "<br>");
+  screen.innerHTML += `<div class="line">${String(text).replace(/\n/g, "<br>")}</div>`;
 }
 
 
@@ -744,23 +744,6 @@ function saveActivityName(name) {
 }
 
 
-
-cancelActivityBtn.addEventListener("click", async () => {
-  const wasEditing = !!store.editingActivity;
-
-  store.editingActivity = null;
-  addActivityBtn.textContent = "Add Activity";
-  if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
-
-  hideAllForms();
-
-  if (wasEditing) {
-    await showHistory();   // go back to history if canceling an edit
-  } else {
-    drawHome();            // normal cancel from "Log Activity"
-  }
-});
-
 async function importActivityNamesFromHistory() {
   const uid = store.session.userId;
   if (!uid) return;
@@ -990,7 +973,7 @@ screen.classList.add("friends-screen");
 
 async function showFriends() {
   hideAllForms();
-  screen.textContent = "";
+
 document.getElementById("friendControls").classList.remove("hidden");
 
 const followingHtml = await renderFollowingList();
@@ -1211,33 +1194,33 @@ async function getUserActivities(uid) {
 
 async function toggleFriendDetails(lineElement, username) {
 
-console.log("toggleFriendDetails called for:", username);
-
   // If already expanded, collapse it
   if (lineElement.nextSibling && lineElement.nextSibling.classList.contains("friend-details")) {
     lineElement.nextSibling.remove();
     return;
   }
 
-  // Otherwise expand it
+  // Remove any other open friend details
+  document.querySelectorAll(".friend-details").forEach(el => el.remove());
+
   const uid = friendUidMap[username];
   if (!uid) return;
 
   const activities = await getUserActivities(uid);
-
   const statsHtml = renderStats(activities);
 
   const details = document.createElement("div");
-  details.classList.add("friend-details");
+  details.classList.add("friend-details", "line");
   details.style.marginLeft = "20px";
   details.style.whiteSpace = "pre-wrap";
   details.style.marginTop = "5px";
   details.style.marginBottom = "10px";
 
-  details.textContent = `${statsHtml}`;
+  details.innerHTML = statsHtml;
 
   lineElement.insertAdjacentElement("afterend", details);
 }
+
 
 
 
@@ -1246,16 +1229,12 @@ function renderStats(list) {
     return "No stats available.";
   }
 
-  //////////////////////////*STREAKS*/////////////////////////////////
+  const { currentStreak, bestStreak } = calculateStreaks(list);
 
-const { currentStreak, bestStreak } = calculateStreaks(list);
+  function getMinutes(a) {
+    return a.minutes ?? a.amount ?? a.duration ?? a.time ?? 0;
+  }
 
-function getMinutes(a) {
-  return a.minutes ?? a.amount ?? a.duration ?? a.time ?? 0;
-}
-
-
-  // --- MOVEMENT TOTALS ---
   const totalMinutes = list.reduce((sum, a) => sum + getMinutes(a), 0);
 
   const dayTotals = {};
@@ -1263,7 +1242,6 @@ function getMinutes(a) {
     const day = new Date(a.date).toDateString();
     dayTotals[day] = (dayTotals[day] || 0) + getMinutes(a);
   });
-
   const topDayMinutes = Math.max(...Object.values(dayTotals));
 
   const weekTotals = {};
@@ -1272,28 +1250,14 @@ function getMinutes(a) {
     const week = `${d.getFullYear()}-W${Math.ceil((d.getDate() - d.getDay() + 1) / 7)}`;
     weekTotals[week] = (weekTotals[week] || 0) + getMinutes(a);
   });
-
   const topWeekMinutes = Math.max(...Object.values(weekTotals));
 
-  // --- TOTALS BY TYPE ---
-  const typeTotals = {};
-  list.forEach(a => {
-    typeTotals[a.type] = (typeTotals[a.type] || 0) + getMinutes(a);
-  });
-
-  // --- BUILD OUTPUT ---
   let output = "";
-
   output += `Current streak: ${currentStreak} day(s)\n`;
   output += `Best streak: ${bestStreak} day(s)\n`;
-
   output += `Total time moving: ${formatMinutes(totalMinutes)}\n`;
   output += `Top day: ${formatMinutes(topDayMinutes)}\n`;
   output += `Top week: ${formatMinutes(topWeekMinutes)}\n`;
-
-  Object.keys(typeTotals).forEach(type => {
-    output += `${type}: ${formatMinutes(typeTotals[type])}\n`;
-  });
 
   return output.trim();
 }
@@ -1306,6 +1270,8 @@ function getMinutes(a) {
 async function showHistory() {
   hideAllForms();
   screen.textContent = "";
+screen.classList.remove("friends-screen");
+
 
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
@@ -1394,8 +1360,9 @@ for (const a of list) {
     if (groups.today.length) {
       appendGroup("", groups.today, false);
     } else {
-      append("(none)");
-      append("");
+append(`<div class="line">(none)</div>`);
+append(`<div class="line"></div>`);
+
     }
 
     // YESTERDAY
@@ -1423,7 +1390,14 @@ for (const a of list) {
 
 /* CLICK HANDLER: history lines + confirmation YES/NO */
 screen.addEventListener("click", (e) => {
+
+  // Prevent history logic while viewing friends
+  if (screen.classList.contains("friends-screen")) {
+    return;
+  }
+
   const target = e.target;
+
 
   // Confirmation buttons
   const confirmAction = target.dataset.confirm;
