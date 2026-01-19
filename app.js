@@ -641,6 +641,25 @@ hideAllViews();
 document.getElementById("healthBarWrapper").style.display = "block"; updateHealthBar();
 });
 
+const menuButtons = document.querySelectorAll('#menu button');
+
+menuButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    menuButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+const activityModal = document.getElementById("activityModal");
+
+document.querySelectorAll('#menu button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activityModal.classList.add('hidden');
+  });
+});
+
+
+
 ////////////////////////* ACTIVITY FORM (ADD OR UPDATE) *//////////////////////////////
 
 addActivityBtn.addEventListener("click", async () => {
