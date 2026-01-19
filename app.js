@@ -827,12 +827,15 @@ activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
 
-  // Scroll the modal into view
-  document.querySelector('.modal-content').scrollIntoView({
-    behavior: 'instant',
-    block: 'start'
-  });
+  // Scroll the modal higher in the viewport
+  setTimeout(() => {
+    document.querySelector('.pipboy-modal').scrollIntoView({
+      behavior: 'instant',
+      block: 'start'
+    });
+  }, 50);
 });
+
 
 
 
@@ -1641,3 +1644,4 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
