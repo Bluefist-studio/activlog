@@ -242,15 +242,16 @@
   position: relative;
   width: 100%;
   max-width: 600px;
-  margin: 0 auto;
+  margin: 20px auto 0;   /* sits under the health bar */
   padding: 0;
-  height: auto;          /* FIXED */
-  overflow: visible;     /* FIXED */
+  height: auto;          /* allows pushing content down */
+  overflow: visible;
 
   background: transparent;
   border: none;
   box-shadow: none;
 }
+
 
 .pipboy-modal .modal-content {
   width: 80%;
@@ -258,12 +259,11 @@
   max-height: 60vh;
   overflow-y: auto;
 
-  position: relative;    /* FIXED */
-  top: 0;                /* FIXED */
+  position: relative;    /* stays in layout */
+  top: 0;
   z-index: 999;
 
-  margin: 10px auto 0;   /* FIXED */
-
+  margin: 0 auto;        /* no extra gap */
   background: rgba(10, 31, 20, 0.95);
   border: 3px solid #4cff6a;
   box-shadow: 0 0 18px #4cff6a;
@@ -272,6 +272,7 @@
 
   animation: pipboyGlowPulse 3s ease-in-out infinite;
 }
+
 
 
 
