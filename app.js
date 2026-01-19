@@ -826,6 +826,14 @@ modalActivityInput.addEventListener("input", () => {
 activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
+
+setTimeout(() => {
+  activityModal.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}, 50);
+
 });
 
 
