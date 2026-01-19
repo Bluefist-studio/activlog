@@ -827,12 +827,13 @@ activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
 
-  // Scroll the modal to the top of the visible window
+  // Scroll the modal into view
   document.querySelector('.modal-content').scrollIntoView({
-    behavior: 'smooth',
+    behavior: 'instant',
     block: 'start'
   });
 });
+
 
 
 modalAddBtn.addEventListener("click", () => {
