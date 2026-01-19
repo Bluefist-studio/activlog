@@ -229,6 +229,12 @@
   text-shadow: 0 0 4px #8cff9a;
 }
 
+#menu button.active {
+  background: rgba(76, 255, 106, 0.2);
+  border-color: #8cff9a;
+  box-shadow: 0 0 12px #8cff9a;
+}
+
 
 /* //////////////// drop down //////////////// */
 
@@ -376,5 +382,11 @@ input[type="range"] {
 
 input[type="range"] {
   visibility: hidden;
+}
+
+@media (max-width: 600px) {
+  .pipboy-modal .modal-content {
+    margin-top: 10px;
+  }
 }
 
