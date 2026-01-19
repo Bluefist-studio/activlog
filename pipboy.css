@@ -391,3 +391,10 @@ input[type="range"] {
   }
 }
 
+@media (max-width: 600px) {
+  body.modal-open #terminal {
+    padding-bottom: 40vh !important;
+  }
+}
+
+
