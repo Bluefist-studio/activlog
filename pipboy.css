@@ -238,47 +238,31 @@
 
 /* //////////////// drop down //////////////// */
 
-/* Outer container: same width behavior as other boxes */
 .pipboy-modal {
   position: relative;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 0;              /* remove padding so outer box disappears */
-height: 0 !important; 
-overflow: visible;
+  padding: 0;
+  height: auto;          /* FIXED */
+  overflow: visible;     /* FIXED */
 
-  background: transparent; /* hide outer box */
-  border: none;            /* hide border */
-  box-shadow: none;        /* hide glow */
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.pipboy-modal {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-
-
-/* Hide when not in use */
-.hidden {
-  display: none !important;
-}
-
-
-
-/* Inner Pip-Boy panel: fixed width, centered inside the outer box */
 .pipboy-modal .modal-content {
-width: 80%; 
-max-width: 320px;
+  width: 80%;
+  max-width: 320px;
   max-height: 60vh;
   overflow-y: auto;
-position: fixed; 
-top: env(safe-area-inset-top, 10px);
 
-left: 50%; 
-transform: translateX(-50%);
+  position: relative;    /* FIXED */
+  top: 0;                /* FIXED */
+  z-index: 999;
 
-  margin: 0 auto;          /* centers this box inside .pipboy-modal */
+  margin: 10px auto 0;   /* FIXED */
 
   background: rgba(10, 31, 20, 0.95);
   border: 3px solid #4cff6a;
@@ -288,6 +272,8 @@ transform: translateX(-50%);
 
   animation: pipboyGlowPulse 3s ease-in-out infinite;
 }
+
+
 
 /* Title */
 .modal-title {
