@@ -120,6 +120,7 @@ function save() {
 }
 
 ///////////////////////* HELPERS *////////////////////////////////
+
 function print(text = "") {
   screen.innerHTML += String(text).replace(/\n/g, "<br>");
 }
@@ -287,7 +288,9 @@ function formatMinutes(min) {
 }
 
 
+
 /////////// health ////////////
+
 function calculateHealthScore(streak, minutesToday) {
 
   // Convert streak to 0–100
@@ -461,8 +464,6 @@ function openEditActivity(activity) {
 }
 
 
-
-
 function showProfileForm() {
   hideAllForms();
   screen.textContent = "";
@@ -479,6 +480,7 @@ function drawHome() {
 }
 
 ///////////////////////////////* LOGIN *///////////////////////////////////////
+
 loginBtn.addEventListener("click", () => {
   const email = (loginEmail.value || "").trim();
   const pin = (loginPin.value || "").trim();
@@ -583,6 +585,7 @@ createBtn.addEventListener("click", () => {
 });
 
 /////////////////////////////* MENU *///////////////////////////////////
+
 menu.addEventListener("click", e => {
   const action = e.target.dataset.action;
   if (!action) return;
@@ -638,7 +641,8 @@ hideAllViews();
 document.getElementById("healthBarWrapper").style.display = "block"; updateHealthBar();
 });
 
-/* ACTIVITY FORM (ADD OR UPDATE) */
+////////////////////////* ACTIVITY FORM (ADD OR UPDATE) *//////////////////////////////
+
 addActivityBtn.addEventListener("click", async () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
@@ -655,6 +659,9 @@ addActivityBtn.addEventListener("click", async () => {
     print("FILL ACTIVITY AND MINUTES.");
     return;
   }
+
+saveActivityName(type);
+loadActivitySuggestions();
 
   const uid = store.session.userId;
   if (!uid) { print("NOT LOGGED IN."); return; }
@@ -691,6 +698,9 @@ addActivityBtn.addEventListener("click", async () => {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+saveActivityName(type); // ensure saved 
+loadActivitySuggestions(); // refresh dropdown
+
     const distEl = document.getElementById("activityDistance");
     if (distEl) distEl.value = "";
 
@@ -702,6 +712,18 @@ addActivityBtn.addEventListener("click", async () => {
     print(`SAVE FAILED: ${err.code || ""} ${err.message || err}`);
   }
 });
+
+function saveActivityName(name) {
+  if (!name) return;
+
+  let list = JSON.parse(localStorage.getItem("activityNames") || "[]");
+
+  if (!list.includes(name)) {
+    list.push(name);
+    localStorage.setItem("activityNames", JSON.stringify(list));
+  }
+}
+
 
 
 cancelActivityBtn.addEventListener("click", async () => {
@@ -720,13 +742,94 @@ cancelActivityBtn.addEventListener("click", async () => {
   }
 });
 
-///* PROFILE SAVE (PIN change only) *///
+async function importActivityNamesFromHistory() {
+  const uid = store.session.userId;
+  if (!uid) return;
+
+  const localList = JSON.parse(localStorage.getItem("activityNames") || "[]");
+  const names = new Set(localList);
+
+  const snap = await activitiesRef(uid).get();
+
+  snap.forEach(doc => {
+    const type = doc.data().type;
+    if (type) names.add(type.trim());
+  });
+
+  localStorage.setItem("activityNames", JSON.stringify([...names]));
+  loadActivitySuggestions();
+}
+
+
+activityType.addEventListener("click", () => {
+  document.getElementById("activityModal").classList.remove("hidden");
+  modalActivityInput.value = activityType.value;
+  modalActivityInput.focus();
+  showModalDropdown("");
+});
+
+function showModalDropdown(filter = "") {
+  const list = JSON.parse(localStorage.getItem("activityNames") || "[]");
+  const dropdown = document.getElementById("modalDropdown");
+
+  dropdown.innerHTML = "";
+
+  const filtered = list.filter(name =>
+    name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  filtered.forEach(name => {
+    const item = document.createElement("div");
+    item.textContent = name;
+    item.addEventListener("click", () => {
+      modalActivityInput.value = name;
+      activityType.value = name;
+      closeModal();
+    });
+    dropdown.appendChild(item);
+  });
+}
+
+function closeModal() {
+  document.getElementById("activityModal").classList.add("hidden");
+}
+
+modalCloseBtn.addEventListener("click", () => {
+  activityType.value = modalActivityInput.value;
+  closeModal();
+});
+
+modalActivityInput.addEventListener("input", () => {
+  showModalDropdown(modalActivityInput.value);
+});
+
+
+activityType.addEventListener("click", () => {
+  document.body.classList.add("modal-open");
+  activityModal.classList.remove("hidden");
+});
+
+modalAddBtn.addEventListener("click", () => {
+  activityType.value = modalActivityInput.value.trim();
+  closeModal();
+});
+
+function closeModal() {
+  document.getElementById("activityModal").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
+
+
+////////////////////////////* PROFILE SAVE (PIN change only) *///////////////////////////////
 
 saveProfileBtn.addEventListener("click", async () => {
   const requestedUsername = normalizeUsername(profileUsername.value);
   const current = normalizeUsername(store.session.username || "");
   const newPin = profilePin.value.trim();
   const uid = store.session.userId;
+importActivityNamesFromHistory();
+
 
   if (!uid) {
     print("NOT LOGGED IN.");
@@ -831,6 +934,25 @@ updateHealthBar();
     }
   });
 }
+
+
+function loadActivitySuggestions() {
+  const list = JSON.parse(localStorage.getItem("activityNames") || "[]");
+  const datalist = document.getElementById("activitySuggestions");
+
+  datalist.innerHTML = "";
+
+  list.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    datalist.appendChild(option);
+  });
+}
+
+
+
+
+
 
 /////////////////////////*FRIENDS*////////////////////////////////////////
 
@@ -1095,6 +1217,7 @@ function renderStats(list) {
   }
 
   //////////////////////////*STREAKS*/////////////////////////////////
+
 const { currentStreak, bestStreak } = calculateStreaks(list);
 
 function getMinutes(a) {
@@ -1463,10 +1586,14 @@ updateDailyQuote();
     store.session.username = uname || store.session.username || "USER";
 
     save();
+loadActivitySuggestions();
+importActivityNamesFromHistory();
     showApp(true);
 
 document.getElementById("healthBarWrapper").style.display = "block"; 
 updateHealthBar();
+
+
 
   } else {
     store.session.userId = null;
