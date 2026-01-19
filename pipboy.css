@@ -245,6 +245,17 @@
   box-shadow: none;        /* hide glow */
 }
 
+.pipboy-modal {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@supports (height: 100dvh) {
+  .pipboy-modal {
+    height: 100dvh;
+  }
+}
+
+
 
 /* Hide when not in use */
 .hidden {
@@ -257,7 +268,11 @@ body.modal-open {
 
 /* Inner Pip-Boy panel: fixed width, centered inside the outer box */
 .pipboy-modal .modal-content {
-  width: 320px;
+width: 90%; 
+max-width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+
   margin: 0 auto;          /* centers this box inside .pipboy-modal */
 
   background: rgba(10, 31, 20, 0.95);
@@ -362,3 +377,4 @@ input[type="range"] {
 input[type="range"] {
   visibility: hidden;
 }
+
