@@ -257,7 +257,7 @@
 
 @supports (height: 100dvh) {
   .pipboy-modal {
-    height: 100dvh;
+    height: 0;
   }
 }
 
