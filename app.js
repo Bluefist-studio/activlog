@@ -826,13 +826,14 @@ activityType.addEventListener("click", () => {
 
 setTimeout(() => {
   const rect = activityModal.getBoundingClientRect();
-  const offset = rect.top + window.scrollY - 10; // 10px gap
+  const offset = rect.top + window.scrollY - 60; // safe buffer
 
   window.scrollTo({
     top: offset,
     behavior: "smooth"
   });
 }, 50);
+
 
 });
 
