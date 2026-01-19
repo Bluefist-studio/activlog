@@ -245,6 +245,8 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 0;              /* remove padding so outer box disappears */
+height: 0 !important; 
+overflow: visible;
 
   background: transparent; /* hide outer box */
   border: none;            /* hide border */
@@ -253,12 +255,6 @@
 
 .pipboy-modal {
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-@supports (height: 100dvh) {
-  .pipboy-modal {
-    height: 0;
-  }
 }
 
 
@@ -277,7 +273,8 @@ max-width: 320px;
   max-height: 60vh;
   overflow-y: auto;
 position: fixed; 
-top: 10px; 
+top: env(safe-area-inset-top, 10px);
+
 left: 50%; 
 transform: translateX(-50%);
 
