@@ -826,7 +826,14 @@ modalActivityInput.addEventListener("input", () => {
 activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
+
+  // Scroll the modal to the top of the visible window
+  document.querySelector('.modal-content').scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
 });
+
 
 modalAddBtn.addEventListener("click", () => {
   activityType.value = modalActivityInput.value.trim();
@@ -1588,6 +1595,7 @@ const lines = [
     print(`STATS FAILED: ${err.code || ""} ${err.message || err}`);
   }
 }
+
 
 
 
