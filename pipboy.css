@@ -276,6 +276,10 @@ width: 80%;
 max-width: 320px;
   max-height: 60vh;
   overflow-y: auto;
+position: fixed; 
+top: 10px; 
+left: 50%; 
+transform: translateX(-50%);
 
   margin: 0 auto;          /* centers this box inside .pipboy-modal */
 
