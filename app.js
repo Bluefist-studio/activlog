@@ -826,16 +826,8 @@ modalActivityInput.addEventListener("input", () => {
 activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
-
-  // Mobile-safe scroll
-setTimeout(() => {
-  window.scrollTo({
-    top: activityModal.offsetTop - 120,
-    behavior: "instant"
-  });
-}, 150);
-
 });
+
 
 
 modalAddBtn.addEventListener("click", () => {
@@ -1643,8 +1635,3 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
-
-
-
-
-
