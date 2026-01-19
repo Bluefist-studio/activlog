@@ -829,7 +829,7 @@ activityType.addEventListener("click", () => {
 
   setTimeout(() => {
     window.scrollTo({
-      top: activityModal.offsetTop - 20,
+      top: activityModal.offsetTop - 60,
       behavior: "instant"
     });
   }, 50);
@@ -1645,5 +1645,6 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
