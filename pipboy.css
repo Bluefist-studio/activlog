@@ -274,7 +274,7 @@ body.modal-open {
 
 /* Inner Pip-Boy panel: fixed width, centered inside the outer box */
 .pipboy-modal .modal-content {
-width: 90%; 
+width: 80%; 
 max-width: 320px;
   max-height: 80vh;
   overflow-y: auto;
