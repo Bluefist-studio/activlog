@@ -63,19 +63,35 @@
 </div>
 
 
+<div class="pipboy-modal hidden" id="activityModal">
+  <div class="modal-content">
+    <div class="modal-title">ENTER ACTIVITY</div>
+
+    <input id="modalActivityInput" autocomplete="off">
+
+    <div id="modalDropdown" class="modal-dropdown"></div>
+
+    <button id="modalAddBtn">Add</button>
+    <button id="modalCloseBtn">Close</button>
+  </div>
+</div>
+
 
     <div id="screen"></div>
 
 <!-- Inline Activity Logging Form -->
 <div id="activityForm" class="view hidden">
   <div class="line">Activity:</div>
-  <input id="activityType">
+
+<input id="activityType" list="activitySuggestions">
+<datalist id="activitySuggestions"></datalist>
+
   
   <div class="line">Minutes:</div>
   <input id="activityDuration" type="number">
 
-  <div class="line">Distance (optional):</div>
-  <input id="activityDistance" type="number" step="0.01">
+  <!-- <div class="line">Distance (optional):</div>
+  <input id="activityDistance" type="number" step="0.01">-->
 
   <div class="line">Date:</div>
   <input id="activityDate" type="date">
