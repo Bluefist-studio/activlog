@@ -828,12 +828,13 @@ activityType.addEventListener("click", () => {
   activityModal.classList.remove("hidden");
 
   // Mobile-safe scroll
-  setTimeout(() => {
-    window.scrollTo({
-      top: activityModal.getBoundingClientRect().top + window.scrollY - 10,
-      behavior: "instant"
-    });
-  }, 150);
+setTimeout(() => {
+  window.scrollTo({
+    top: activityModal.offsetTop - 120,
+    behavior: "instant"
+  });
+}, 150);
+
 });
 
 
@@ -1642,6 +1643,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
