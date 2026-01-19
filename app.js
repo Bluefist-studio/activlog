@@ -824,12 +824,16 @@ activityType.addEventListener("click", () => {
   modalActivityInput.focus();
   showModalDropdown("");
 
-  setTimeout(() => {
-    activityModal.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }, 50);
+setTimeout(() => {
+  const rect = activityModal.getBoundingClientRect();
+  const offset = rect.top + window.scrollY - 10; // 10px gap
+
+  window.scrollTo({
+    top: offset,
+    behavior: "smooth"
+  });
+}, 50);
+
 });
 
 
