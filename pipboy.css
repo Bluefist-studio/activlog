@@ -247,7 +247,7 @@
     margin: 0;
     padding-top: 10px; /* small breathing room */
     z-index: 9999;
-    background: rgba(10, 31, 20, 0.85); /* subtle overlay */
+    background: rgba(10, 31, 20, .85); /* subtle overlay */
   }
 
   .pipboy-modal .modal-content {
@@ -377,6 +377,27 @@ input[type="range"] {
 @media (max-width: 600px) {
   .pipboy-modal .modal-content {
     margin-top: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  body.modal-open #terminal {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  body.modal-open {
+    overflow: hidden; /* prevents background scrolling */
+  }
+
+  .pipboy-modal {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .pipboy-modal {
+    margin: 0 auto !important;
   }
 }
 
