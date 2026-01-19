@@ -238,21 +238,11 @@
 
 /* //////////////// drop down //////////////// */
 
-@media (max-width: 600px) {
-  .pipboy-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding-top: 10px; /* small breathing room */
-    z-index: 9999;
-    background: rgba(10, 31, 20, .85); /* subtle overlay */
-  }
-
-  .pipboy-modal .modal-content {
-    margin-top: 0;
-  }
+.pipboy-modal {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto 0;
 }
 
 
