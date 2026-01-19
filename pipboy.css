@@ -238,19 +238,23 @@
 
 /* //////////////// drop down //////////////// */
 
-.pipboy-modal {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto 0;   /* sits under the health bar */
-  padding: 0;
-  height: auto;          /* allows pushing content down */
-  overflow: visible;
+@media (max-width: 600px) {
+  .pipboy-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding-top: 10px; /* small breathing room */
+    z-index: 9999;
+    background: rgba(10, 31, 20, 0.85); /* subtle overlay */
+  }
 
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  .pipboy-modal .modal-content {
+    margin-top: 0;
+  }
 }
+
 
 
 .pipboy-modal .modal-content {
