@@ -210,3 +210,155 @@
 .pipboy-theme #terminal {
   animation: jitter 8s infinite;
 }
+
+
+//hide distance//
+#activityDistance,
+#activityDistance + .line,
+.line + #activityDistance {
+  display: none;
+}
+
+.pipboy-theme * {
+  font-family: "VT323", monospace !important;
+}
+
+.pipboy-theme ::placeholder {
+  color: #8cff9a;
+  opacity: 0.5;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+
+/* //////////////// drop down //////////////// */
+
+/* Outer container: same width behavior as other boxes */
+.pipboy-modal {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;              /* remove padding so outer box disappears */
+
+  background: transparent; /* hide outer box */
+  border: none;            /* hide border */
+  box-shadow: none;        /* hide glow */
+}
+
+
+/* Hide when not in use */
+.hidden {
+  display: none !important;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Inner Pip-Boy panel: fixed width, centered inside the outer box */
+.pipboy-modal .modal-content {
+  width: 320px;
+  margin: 0 auto;          /* centers this box inside .pipboy-modal */
+
+  background: rgba(10, 31, 20, 0.95);
+  border: 3px solid #4cff6a;
+  box-shadow: 0 0 18px #4cff6a;
+  padding: 20px;
+  border-radius: 6px;
+
+  animation: pipboyGlowPulse 3s ease-in-out infinite;
+}
+
+/* Title */
+.modal-title {
+  font-family: "VT323", monospace;
+  color: #8cff9a;
+  font-size: 22px;
+  margin-bottom: 10px;
+  text-shadow: 0 0 6px #4cff6a;
+}
+
+/* Input inside modal */
+#modalActivityInput {
+  width: 100%;
+  padding: 6px;
+  font-family: "VT323", monospace;
+  font-size: 18px;
+  background: #0a1f14;
+  color: #8cff9a;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+  margin-bottom: 10px;
+}
+
+/* Dropdown list */
+.modal-dropdown {
+  background: rgba(10, 31, 20, 0.95);
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 12px #4cff6a;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+/* Dropdown items */
+.modal-dropdown div {
+  padding: 6px;
+  cursor: pointer;
+  color: #8cff9a;
+  font-family: "VT323", monospace;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+.modal-dropdown div:hover {
+    background: rgba(76, 255, 106, 0.2);
+  box-shadow: 0 0 10px #4cff6a;
+}
+
+/* Add button */
+#modalAddBtn {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 8px;
+  font-family: "VT323", monospace;
+  background: #0a1f14;
+  color: #8cff9a;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+/* Close button */
+#modalCloseBtn {
+  width: 100%;
+  padding: 6px;
+  font-family: "VT323", monospace;
+  background: #0a1f14;
+  color: #8cff9a;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #0a1f14;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+  height: 6px;
+}
+
+#modalAddBtn:hover,
+#modalCloseBtn:hover {
+  background: rgba(76, 255, 106, 0.2);
+  border-color: #8cff9a;
+  box-shadow: 0 0 12px #8cff9a;
+  cursor: pointer;
+}
+
+
+input[type="range"] {
+  display: none;
+}
+
+input[type="range"] {
+  visibility: hidden;
+}
