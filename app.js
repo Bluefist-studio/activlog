@@ -780,13 +780,6 @@ async function importActivityNamesFromHistory() {
 }
 
 
-activityType.addEventListener("click", () => {
-  document.getElementById("activityModal").classList.remove("hidden");
-  modalActivityInput.value = activityType.value;
-  modalActivityInput.focus();
-  showModalDropdown("");
-});
-
 function showModalDropdown(filter = "") {
   const list = JSON.parse(localStorage.getItem("activityNames") || "[]");
   const dropdown = document.getElementById("modalDropdown");
@@ -827,13 +820,16 @@ activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
 
-setTimeout(() => {
-  activityModal.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-}, 50);
+  modalActivityInput.value = activityType.value;
+  modalActivityInput.focus();
+  showModalDropdown("");
 
+  setTimeout(() => {
+    activityModal.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 50);
 });
 
 
