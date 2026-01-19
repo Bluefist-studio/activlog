@@ -827,17 +827,14 @@ activityType.addEventListener("click", () => {
   document.body.classList.add("modal-open");
   activityModal.classList.remove("hidden");
 
+  // Mobile-safe scroll
   setTimeout(() => {
     window.scrollTo({
-      top: activityModal.offsetTop - 60,
+      top: activityModal.getBoundingClientRect().top + window.scrollY - 10,
       behavior: "instant"
     });
-  }, 50);
+  }, 150);
 });
-
-
-
-
 
 
 modalAddBtn.addEventListener("click", () => {
@@ -1645,6 +1642,7 @@ function handleLoginKey(e) {
 loginEmail.addEventListener("keydown", handleLoginKey);
 loginPin.addEventListener("keydown", handleLoginKey);
 loginUser.addEventListener("keydown", handleLoginKey);
+
 
 
 
