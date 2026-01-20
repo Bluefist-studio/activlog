@@ -1,0 +1,374 @@
+/* ---------------------------------------------------------
+   PIP-BOY THEME (Fallout 4 style)
+   Soft green, CRT scanlines, glow, retro borders
+   TOUCH-FRIENDLY UI SCALE ENABLED
+--------------------------------------------------------- */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* GLOBAL UI SCALE */
+.pipboy-theme {
+  background: #0a1f14;
+  color: #8cff9a;
+  font-family: "VT323", monospace;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px #8cff9a;
+  position: relative;
+  overflow-x: hidden;
+
+  /* ⭐ Touch-friendly scaling */
+  font-size: 24px;
+}
+
+/* CRT Scanlines */
+.pipboy-theme::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(140, 255, 154, 0.05) 0px,
+    rgba(140, 255, 154, 0.05) 2px,
+    transparent 3px,
+    transparent 4px
+  );
+  opacity: 0.25;
+  z-index: 9999;
+}
+
+/* Subtle vignette */
+.pipboy-theme::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4));
+  z-index: 9998;
+}
+
+/* Panels / Cards */
+.pipboy-theme .panel,
+.pipboy-theme .card,
+.pipboy-theme .container {
+  border: 3px solid #4cff6a;
+  padding: 20px;
+  margin: 20px;
+  background: rgba(10, 31, 20, 0.6);
+  box-shadow: 0 0 12px #4cff6a;
+  border-radius: 4px;
+}
+
+/* Buttons */
+.pipboy-theme button {
+  background: transparent;
+  border: 2px solid #4cff6a;
+  border-radius: 4px;
+  color: #8cff9a;
+
+  /* ⭐ Touch-friendly buttons */
+  padding: 14px 24px;
+  font-size: 26px;
+
+  font-family: "VT323", monospace;
+  cursor: pointer;
+  text-shadow: 0 0 4px #8cff9a;
+  transition: 0.2s;
+}
+
+.pipboy-theme button:hover {
+  background: rgba(76, 255, 106, 0.2);
+  box-shadow: 0 0 10px #4cff6a;
+}
+
+/* Menu buttons */
+#menu button {
+  font-size: 28px;
+  padding: 16px 24px;
+}
+
+#menu button.active {
+  background: rgba(76, 255, 106, 0.2);
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 12px #4cff6a;
+  color: #8cff9a;
+}
+
+
+/* Titles */
+.line strong,
+.history-title {
+  color: #00ff66 !important;
+  font-weight: bold;
+  font-size: 30px;
+  text-shadow: 0 0 6px #4cff6a;
+}
+
+/* Statistics / Section Titles */
+.pip-title {
+  color: #8cff9a !important;
+  font-weight: bold;
+  font-size: 30px;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+/* List items */
+.pip-item,
+.line,
+.activity-line,
+.stat-line {
+  color: #00cc55 !important;
+  text-shadow: 0 0 3px #00cc55;
+
+  /* ⭐ Touch-friendly list items */
+  font-size: 26px;
+  padding: 6px 0;
+}
+
+/* Status text */
+.pip-status {
+  color: #00cc55 !important;
+  text-shadow: 0 0 3px #00cc55;
+  font-size: 18px;
+  margin-top: 30px;
+}
+
+/* Inputs */
+.pipboy-theme input,
+.pipboy-theme select {
+  background: rgba(10, 31, 20, 0.6);
+  border: 2px solid #4cff6a;
+  border-radius: 4px;
+  color: #8cff9a;
+  padding: 10px;
+  font-family: "VT323", monospace;
+  font-size: 22px;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+/* Headings */
+.pipboy-theme h1,
+.pipboy-theme h2,
+.pipboy-theme h3 {
+  color: #8cff9a;
+  text-shadow: 0 0 6px #4cff6a;
+  border-bottom: 2px solid #4cff6a;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+/* Health Bar */
+.pipboy-theme #healthBarFill {
+  background: #4cff6a;
+  box-shadow: 0 0 10px #4cff6a;
+  border-radius: 2px;
+  transition: width 0.4s ease-out, background 0.3s;
+}
+
+/* Thicker Pip-Boy health bar */
+#healthBarContainer {
+  background: rgba(10, 31, 20, 0.8); /* darker Pip-Boy green/black */
+  border: 3px solid #4cff6a;         /* glowing border */
+  box-shadow: 0 0 10px #4cff6a;      /* glow */
+  border-radius: 4px;
+
+  max-width: 300px; /* adjust until it fits your layout */ 
+  width: 100%; margin: 0 auto; /* centers it */
+  height: 28px !important;   /* increase the overall bar height */
+  padding: 3px;   
+  margin-top: 0px;           /* optional: adds a nice border gap */
+  margin-bottom: 25px; 
+}
+
+#healthBarFill {
+  height: 100% !important;   /* fill the container vertically */
+  border-radius: 3px;        /* keeps the rounded look */ 
+}
+
+
+.pipboy-theme #healthBarLabel {
+  color: #8cff9a;
+text-weight: normal;
+  font-size: 32px;
+  margin-bottom: 5px; 
+}
+
+/* Friends menu input */
+.pipboy-theme #friendControls input {
+  background: rgba(10, 31, 20, 0.3);
+  border: 2px solid #4cff6a;
+  color: #8cff9a;
+  text-shadow: 0 0 2px #8cff9a;
+  box-shadow: 0 0 4px #4cff6a;
+  padding: 10px;
+  font-size: 22px;
+}
+
+/* Friend details */
+.friend-details {
+  color: #8cff9a !important;
+  text-shadow: 0 0 6px #4cff6a !important;
+}
+
+/* Terminal */
+.pipboy-theme #terminal {
+  border: 3px solid #4cff6a;
+  box-shadow: 0 0 7px #4cff6a, inset 0 0 15px rgba(76, 255, 106, 0.2);
+  border-radius: 8px;
+  background: radial-gradient(circle at center, rgba(10, 31, 20, 0.7) 0%, #0a1f14 100%);
+  padding: 20px;
+}
+
+/* Dropdown modal */
+.pipboy-modal .modal-content {
+  width: 80%;
+  max-height: 30vh;
+  overflow: auto;
+  background: rgba(10, 31, 20, 0.95);
+  border: 3px solid #4cff6a;
+  box-shadow: 0 0 18px #4cff6a;
+  padding: 24px;
+  border-radius: 6px;
+  margin-top: 25px;
+
+}
+
+.pipboy-modal {
+
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+
+/////////////////* Modal title *///////////////////
+.modal-title {
+  color: #8cff9a;
+  font-size: 28px;
+  text-shadow: 0 0 6px #4cff6a;
+}
+
+/* Modal input */
+#modalActivityInput {
+  width: 100%;
+  padding: 10px;
+  font-size: 22px;
+  background: #0a1f14;
+  color: #8cff9a;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+/* Dropdown items */
+.modal-dropdown div {
+  padding: 10px;
+  cursor: pointer;
+  color: #8cff9a;
+  font-size: 22px;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+.modal-dropdown div:hover {
+  background: rgba(76, 255, 106, 0.2);
+  box-shadow: 0 0 10px #4cff6a;
+}
+
+#modalDropdown {
+  max-height: 30vh;     /* adjust as needed */
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+/* Modal buttons */
+#modalAddBtn,
+#modalCloseBtn {
+overflow-y: fixed;
+  width: 40%;
+  padding: 12px;
+  font-size: 24px;
+  background: #0a1f14;
+  color: #8cff9a;
+  border: 2px solid #4cff6a;
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;            /* space between buttons */
+  margin-top: 16px;
+}
+
+.modal-buttons button {
+  width: 100%;          /* both buttons same width */
+}
+
+#modalAddBtn:hover,
+#modalCloseBtn:hover {
+  background: rgba(76, 255, 106, 0.2);
+  border-color: #8cff9a;
+  box-shadow: 0 0 12px #8cff9a;
+}
+
+body.modal-open {
+  overflow: hidden;
+  height: 100vh;
+}
+
+
+
+
+
+/* Placeholder */
+.pipboy-theme ::placeholder {
+  color: #8cff9a;
+  opacity: 0.5;
+  text-shadow: 0 0 4px #8cff9a;
+}
+
+/* Global font lock for Pip-Boy */
+.pipboy-theme * {
+  font-family: "VT323", monospace !important;
+}
+
+/* ASCII logo keeps its own font */
+.ascii-logo {
+  color: #8cff9a;
+  text-shadow: 0 0 6px #8cff9a, 0 0 10px #8cff9a;
+  font-family: Consolas, monospace;
+  margin: 0;
+  line-height: 1;
+  font-size: 64px;
+}
+
+
+#dailyQuote {
+  font-size: 26px;
+  font-weight: normal;
+  margin-top: 20px;
+  margin-bottom: 30px;
+  text-align: center;
+  color: #00cc55;
+}
+
+.menu-section-title {
+  font-size: 30px !important;
+  font-weight: bold;
+  color: #00ff66 !important;
+  text-shadow: 0 0 6px #00cc55 !important;
+  margin-bottom: 10px;
+}
+
+
+/* ---------------------------------------------------------
+   GLOBAL TEXT SHADOW OVERRIDE (Unified Glow)
+   Forces all text shadows to #00cc55
+--------------------------------------------------------- */
+
+.pipboy-theme,
+.pipboy-theme * {
+  text-shadow: 0 0 4px #00cc55 !important;
+}
+
+
+//8cff9a//4cff6a//00cc55//
