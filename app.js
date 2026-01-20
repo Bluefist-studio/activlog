@@ -1157,7 +1157,7 @@ async function renderFollowingList() {
 
       // Populate the UID map
       friendUidMap[data.username] = data.uid;
-console.log("friendUidMap:", friendUidMap);
+
     });
   }
 
@@ -1356,7 +1356,7 @@ for (const a of list) {
 
     // TODAY
     const todayLabel = formatShortDateFromDate(today);
-    append(`<strong>TODAY — ${todayLabel}</strong>`);
+    append(`<div class="pip-title">TODAY — ${todayLabel}</div>`);
     if (groups.today.length) {
       appendGroup("", groups.today, false);
     } else {
@@ -1369,15 +1369,16 @@ append(`<div class="line"></div>`);
     if (groups.yesterday.length) {
       const y = new Date(today.getTime() - dayMs);
       const yLabel = formatShortDateFromDate(y);
-      append(`<strong>YESTERDAY — ${yLabel}</strong>`);
+      append(`<div class="pip-title">YESTERDAY — ${yLabel}</div>`);
       appendGroup("", groups.yesterday, false);
     }
 
     // LAST 7 DAYS (2–7 days ago)
-    appendGroup("<strong>LAST 7 DAYS</strong>", groups.last7, true);
+    appendGroup(`<div class="pip-title">LAST 7 DAYS</div>`, groups.last7, true);
+
 
     // OLDER
-    appendGroup("<strong>OLDER</strong>", groups.older, true);
+    appendGroup(`<div class="pip-title">OLDER</div>`, groups.older, true);
 
     screen.innerHTML = html;
 
@@ -1540,20 +1541,18 @@ if (allDates.length > 0) {
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
 const lines = [
-  "<strong>STREAKS</strong>",
-  "",
+  `<div class="pip-title">STREAKS</div>`,
   `Current streak: ${currentStreak} day(s)`,
   `Best streak: ${bestStreak} day(s)`,
-  "",
-  "<strong>MOVEMENT TOTALS</strong>",
-  "",
+
+  `<div class="pip-title">MOVEMENT TOTALS</div>`,
   `Total time moving: ${formatMinutes(totalMinutes)}`,
   `Top day: ${formatMinutes(topDayMinutes)}`,
   `Top week: ${formatMinutes(topWeekMinutes)}`,
-  "",
-  "<strong>TOTALS BY TYPE</strong>",
-  ""
+
+  `<div class="pip-title">TOTALS BY TYPE</div>`
 ];
+
 
 
       for (const [type, t] of rows) {
@@ -1566,7 +1565,16 @@ const lines = [
       }
 
 
-    print(lines.join("\n"));
+screen.innerHTML =
+  lines
+    .map(line => {
+      if (line.includes("pip-title")) {
+        return line; // bright title
+      }
+      return `<div class="stat-line pip-item">${line}</div>`; // dim items
+    })
+    .join("");
+
 
   } catch (err) {
     console.error(err);
@@ -1593,10 +1601,16 @@ updateDailyQuote();
     save();
 loadActivitySuggestions();
 importActivityNamesFromHistory();
-    showApp(true);
 
-document.getElementById("healthBarWrapper").style.display = "block"; 
-updateHealthBar();
+showApp(true);
+
+document.querySelector('#menu button[data-action="log"]').classList.add('active');
+document.getElementById("healthBarWrapper").style.display = "block";
+
+setTimeout(() => {
+  updateHealthBar();
+}, 50);
+
 
 
 
