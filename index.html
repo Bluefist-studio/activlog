@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ActivLog</title>
   <link rel="stylesheet" href="style.css?v=4">
-<link rel="stylesheet" href="pipboy.css">
+<link rel="stylesheet" href="pipboyb.css">
 </head>
 <body class="pipboy-theme">
 
@@ -42,11 +42,19 @@
     <div id="loginError" class="error"></div>
   </div>
 
+
+<div id="healthBarWrapper" style="display:none; margin-bottom: 10px;">
+  <div id="healthBarLabel"></div>
+<div id="healthBarContainer">
+    <div id="healthBarFill"></div>
+</div>
+</div>
+
   <!-- APP VIEW -->
   <div id="appView" class="view hidden">
 
     <div id="menu">
-      <button data-action="log"> Log Activity</button>
+      <button data-action="log" class="active"> Log Activity</button>
       <button data-action="friends"> Friends</button>
       <button data-action="history"> History</button>
       <button data-action="stats"> Statistics</button>
@@ -55,12 +63,9 @@
     </div>
 
 
-<div id="healthBarWrapper" style="display:none; margin-bottom: 10px;">
-  <div id="healthBarContainer">
-    <div id="healthBarFill"></div>
-  </div>
-  <div id="healthBarLabel"></div>
-</div>
+
+
+<div id="blurOverlay"></div>
 
 
 <div class="pipboy-modal hidden" id="activityModal">
@@ -71,8 +76,8 @@
 
     <div id="modalDropdown" class="modal-dropdown"></div>
 
-    <button id="modalAddBtn">Add</button>
-    <button id="modalCloseBtn">Close</button>
+    <button id="modalAddBtn">Confirm</button>
+    <button id="modalCloseBtn">Cancel</button>
   </div>
 </div>
 
@@ -101,7 +106,6 @@
   
   <button id="addActivityBtn">Add Activity</button>
   <button id="deleteActivityBtn" class="hidden">Delete Activity</button>
-  <button id="cancelActivityBtn">Cancel</button>
 </div>
 
 
@@ -110,6 +114,7 @@
   <button onclick="addFriendByUsername()">Follow</button>
 <button onclick="unfollowByUsername()">Unfollow</button>
 </div>
+
 
 
 
@@ -133,7 +138,7 @@
   <button id="editBtn">Edit</button>
 </div>
 
-
+<div class="pip-status">...<br>Initialized.142.PIP2.ACTLG</div>
 
   </div>
 
