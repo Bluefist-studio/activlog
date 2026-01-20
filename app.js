@@ -988,17 +988,10 @@ screen.innerHTML = "";
 
 
 // FOLLOWERS title
-const followersTitle = document.createElement("div");
-followersTitle.innerHTML = `<strong>FOLLOWERS:</strong> ${followerCount}`;
-followersTitle.style.marginBottom = "28px";
-screen.appendChild(followersTitle);
+screen.insertAdjacentHTML( "beforeend", `<div class="pip-title">FOLLOWERS — ${followerCount}</div>` );
 
 // FOLLOWING title
-const followingTitle = document.createElement("div");
-followingTitle.innerHTML = `<strong>FOLLOWING:</strong> ${followingCount}`;
-followingTitle.style.marginTop = "28px";
-followingTitle.style.marginBottom = "12px";
-screen.appendChild(followingTitle);
+screen.insertAdjacentHTML( "beforeend", `<div class="pip-title">FOLLOWING — ${followingCount}</div>` );
 
 // Following list
 const lines = followingHtml.split("\n");
