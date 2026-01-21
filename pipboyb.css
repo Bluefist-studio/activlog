@@ -20,22 +20,45 @@
   font-size: 24px;
 }
 
-/* CRT Scanlines */
-.pipboy-theme::after {
+
+/* Vertical refresh sweep */
+body.pipboy-theme::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  background: repeating-linear-gradient(
+  background: linear-gradient(
     to bottom,
-    rgba(140, 255, 154, 0.05) 0px,
-    rgba(140, 255, 154, 0.05) 2px,
-    transparent 3px,
-    transparent 4px
+    rgba(76, 255, 106, 0) 0%,
+    rgba(76, 255, 106, 0.06) 55%,
+    rgba(76, 255, 106, 0) 75%
   );
-  opacity: 0.25;
-  z-index: 9999;
+  animation: pipboySweep 4s linear infinite;
+  z-index: 9997;
 }
+
+@keyframes pipboySweep {
+  0% { top: -100%; }
+  100% { top: 100%; }
+}
+
+
+
+@keyframes jitter {
+  0% { transform: translate(0, 0); }
+  2% { transform: translate(1px, -1px); }
+  4% { transform: translate(-1px, 1px); }
+  6% { transform: translate(0, 0); }
+  100% { transform: translate(0, 0); }
+}
+
+.pipboy-theme #terminal {
+  animation: jitter 8s infinite;
+}
+
 
 /* Subtle vignette */
 .pipboy-theme::before {
@@ -74,6 +97,7 @@
   cursor: pointer;
   text-shadow: 0 0 4px #8cff9a;
   transition: 0.2s;
+
 }
 
 .pipboy-theme button:hover {
@@ -185,6 +209,18 @@
   border-radius: 3px;        /* keeps the rounded look */ 
 }
 
+#healthBarFill.high {
+  background-color: #4cff6a; /* Pip-Boy green */
+}
+
+#healthBarFill.mid {
+  background-color: #c8ff4c; /* yellow-green */
+}
+
+#healthBarFill.low {
+  background-color: #ff6a4c; /* orange-red */
+}
+
 
 .pipboy-theme #healthBarLabel {
   color: #8cff9a;
@@ -209,6 +245,41 @@ text-weight: normal;
   color: #8cff9a !important;
   text-shadow: 0 0 6px #4cff6a !important;
 }
+
+#friendControls {
+  display: flex;
+  flex-direction: column; /* input on its own row */
+  gap: 10px;
+}
+
+#friendControls button {
+  width: 120px;              /* your equal width */
+  display: flex;             /* center content inside */
+  justify-content: center;   /* horizontal centering */
+  align-items: center;       /* vertical centering */
+  text-align: center;        /* just in case */
+}
+
+
+
+#friendControls .button-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  justify-content: center; /* centers Follow + Unfollow */
+}
+
+
+.friendButtons {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
 
 /* Terminal */
 .pipboy-theme #terminal {
@@ -342,6 +413,7 @@ body.modal-open {
 }
 
 
+
 #dailyQuote {
   font-size: 26px;
   font-weight: normal;
@@ -351,6 +423,15 @@ body.modal-open {
   color: #00cc55;
 }
 
+.promo {
+  font-size: 26px;
+  font-weight: normal;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #8cff9a;
+}
+
 .menu-section-title {
   font-size: 30px !important;
   font-weight: bold;
@@ -358,6 +439,122 @@ body.modal-open {
   text-shadow: 0 0 6px #00cc55 !important;
   margin-bottom: 10px;
 }
+
+/* ============================
+   CONFIRMATION MODAL (YES/NO)
+   ============================ */
+.edit-confirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 31, 20, 0.95);
+  border: 2px solid #4cff6a;
+  padding: 20px;
+  box-shadow: 0 0 12px #4cff6a;
+  z-index: 9999;
+  text-align: center;
+}
+
+/* Big YES/NO buttons ONLY inside the modal */
+.edit-confirm .confirm-row .pip-btn {
+  width: 150px;
+  height: 48px;
+  font-size: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+/* ============================
+   GENERIC CONFIRM ROW
+   ============================ */
+.confirm-row {
+  margin-top: 0px;
+  display: flex;
+  gap: 32px; /* default gap for modal */
+  justify-content: center;
+}
+
+/* ============================
+   EDIT FORM BUTTONS (normal size)
+   ============================ */
+#activityForm .confirm-row {
+  gap: 12px; /* smaller gap for edit form */
+}
+
+#activityForm .confirm-row .pip-btn {
+  width: auto;
+  height: auto;
+  font-size: 32px;
+  padding: 6px 14px;
+}
+
+#activityForm .confirm-row button {
+  width: 120px;
+  height: auto;
+  font-size: 18px;
+  padding: 6px 14px;
+}
+
+#addActivityBtn {
+  width: auto !important;
+  height: 70px !important;
+  font-size: 32px !important;
+}
+
+#savechangesBtn {
+  width: 120px !important;
+  height: auto !important;
+  font-size: 18px !important;
+}
+
+
+
+/* ============================
+   DELETE FORM BUTTONS
+   ============================ */
+#deleteForm button {
+  width: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+}
+
+/* ============================
+   BASE PIP BUTTON STYLE
+   ============================ */
+.pip-btn {
+  display: inline-block;
+  border: 2px solid #4cff6a;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #8cff9a;
+  font-size: 18px;
+  text-transform: uppercase;
+  background: transparent;
+  user-select: none;
+}
+
+.pip-btn:hover {
+  background: rgba(76, 255, 106, 0.2);
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+/* ============================
+   CONFIRM LINE
+   ============================ */
+.confirm-line {
+  padding: 0 !important;
+  margin: 0px 0 !important;
+  line-height: .60 !important;
+  font-size: 22px !important;
+}
+
+
+
 
 
 /* ---------------------------------------------------------
