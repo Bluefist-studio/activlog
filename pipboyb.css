@@ -86,6 +86,20 @@ body.pipboy-theme::before {
   z-index: 9998;
 }
 
+.pip-dots::after {
+  content: "";
+  animation: pipDots 1.2s steps(4, end) infinite;
+}
+
+@keyframes pipDots {
+  0%   { content: ""; }
+  25%  { content: "."; }
+  50%  { content: ".."; }
+  75%  { content: "..."; }
+  100% { content: ""; }
+}
+
+
 /* Panels / Cards */
 .pipboy-theme .panel,
 .pipboy-theme .card,
@@ -569,6 +583,37 @@ body.modal-open {
   font-size: 22px !important;
 }
 
+//*INFO*//
+.pip-info-corner {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 8px;
+  border: 2px solid #4cff6a;
+  color: #8cff9a;
+  cursor: pointer;
+  font-size: 26px;
+  text-shadow: 0 0 4px #8cff9a;
+  z-index: 9999;
+}
+
+.pip-info-corner:hover {
+  background: rgba(76,255,106,0.2);
+  box-shadow: 0 0 8px #4cff6a;
+}
+
+.pip-info-corner-panel {
+  position: absolute;
+  top: 50px;
+  right: 12px;
+  width: 260px;
+  padding: 12px;
+  border: 2px solid #4cff6a;
+  background: rgba(10,31,20,0.85);
+  box-shadow: 0 0 12px #4cff6a;
+  border-radius: 4px;
+  z-index: 9999;
+}
 
 
 
