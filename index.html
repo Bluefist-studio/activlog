@@ -55,11 +55,9 @@
 
     <div id="menu">
       <button data-action="log" class="active"> Log Activity</button>
-      <button data-action="friends"> Friends</button>
       <button data-action="history"> History</button>
       <button data-action="stats"> Statistics</button>
       <button data-action="profile"> Profile</button>
-      <button data-action="switch"> Switch User</button>
     </div>
 
 
@@ -88,15 +86,11 @@
 <div id="activityForm" class="view hidden">
   <div class="line">Activity:</div>
 
-<input id="activityType" list="activitySuggestions">
-<datalist id="activitySuggestions"></datalist>
+  <input id="activityType" list="activitySuggestions">
+  <datalist id="activitySuggestions"></datalist>
 
-  
   <div class="line">Minutes:</div>
   <input id="activityDuration" type="number">
-
-  <!-- <div class="line">Distance (optional):</div>
-  <input id="activityDistance" type="number" step="0.01">-->
 
   <div class="line">Date:</div>
   <input id="activityDate" type="date">
@@ -104,17 +98,24 @@
   <div class="line">Notes (optional):</div>
   <input id="activityNotes">
   
-  <button id="addActivityBtn">Add Activity</button>
-  <button id="deleteActivityBtn" class="hidden">Delete Activity</button>
+  <div class="confirm-row">
+    <button id="addActivityBtn">Add Activity</button>
+    <button id="savechangesBtn">Save Changes</button>
+    <button id="cancelEditWindowBtn" class="hidden">Cancel</button>
+    <button id="deleteActivityBtn" class="hidden">Delete Activity</button>
+  </div>
 </div>
+
 
 
 <div id="friendControls" class="hidden">
   <input id="friendUsername" placeholder="Enter username">
-  <button onclick="addFriendByUsername()">Follow</button>
-<button onclick="unfollowByUsername()">Unfollow</button>
-</div>
 
+  <div class="button-row">
+    <button onclick="addFriendByUsername()">Follow</button>
+    <button onclick="unfollowByUsername()">Unfollow</button>
+  </div>
+</div>
 
 
 
@@ -129,16 +130,24 @@
       <input id="profilePin" type="password">
 
       <button id="saveProfileBtn">Save</button>
+      <button data-action="switch"> Switch User</button>
     </div>
 
-<!-- History Tools (Edit only) -->
+
+
 <div id="deleteForm" class="view hidden">
   <div class="line">Enter Activity # to edit:</div>
   <input id="editIndex" inputmode="numeric">
-  <button id="editBtn">Edit</button>
+
+  <div class="confirm-row">
+    <button id="editBtn">Edit</button>
+    <button id="cancelEditWindowBtn">Cancel</button>
+  </div>
 </div>
 
-<div class="pip-status">...<br>Initialized.142.PIP2.ACTLG</div>
+
+
+<div class="pip-status">...<br>Initialized.146.PIP3B.ACTLG</div>
 
   </div>
 
