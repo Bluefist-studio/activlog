@@ -16,7 +16,7 @@
   position: relative;
   overflow-x: hidden;
 
-  /* ⭐ Touch-friendly scaling */
+  /* Touch-friendly scaling */
   font-size: 24px;
 }
 
@@ -89,7 +89,7 @@ body.pipboy-theme::before {
   border-radius: 4px;
   color: #8cff9a;
 
-  /* ⭐ Touch-friendly buttons */
+  /* Touch-friendly buttons */
   padding: 14px 24px;
   font-size: 26px;
 
@@ -144,7 +144,7 @@ body.pipboy-theme::before {
   color: #00cc55 !important;
   text-shadow: 0 0 3px #00cc55;
 
-  /* ⭐ Touch-friendly list items */
+  /* Touch-friendly list items */
   font-size: 26px;
   padding: 6px 0;
 }
