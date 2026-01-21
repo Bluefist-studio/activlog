@@ -600,13 +600,20 @@ createBtn.addEventListener("click", () => {
 
 /////////////////////////////* MENU *///////////////////////////////////
 
-menu.addEventListener("click", e => {
-  const action = e.target.dataset.action;
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+
   if (!action) return;
 
-  hideAllForms();
-hideAllViews();
-  screen.textContent = "";
+  // ⭐ Only hide forms if NOT switching user
+  if (action !== "switch") {
+    hideAllForms();
+    hideAllViews();
+    screen.textContent = "";
+  }
 
   switch (action) {
     case "log":
@@ -648,12 +655,16 @@ hideAllViews();
         });
       } else {
         store.switchConfirm = true;
-        print("Press 'Switch User' again to confirm logout.");
+        document.getElementById("profileMessage").textContent = "Press 'Switch User' again to confirm logout.";
       }
       return;
   }
-document.getElementById("healthBarWrapper").style.display = "block"; updateHealthBar();
+
+  document.getElementById("healthBarWrapper").style.display = "block";
+  updateHealthBar();
 });
+
+
 
 const menuButtons = document.querySelectorAll('#menu button');
 
@@ -860,7 +871,8 @@ saveProfileBtn.addEventListener("click", async () => {
   const current = normalizeUsername(store.session.username || "");
   const newPin = profilePin.value.trim();
   const uid = store.session.userId;
-importActivityNamesFromHistory();
+  document.getElementById("profileMessage").textContent = "";
+  importActivityNamesFromHistory();
 
 
   if (!uid) {
@@ -1488,13 +1500,15 @@ screen.innerHTML = `
 
 ////////////////////////* DISPLAY: STATISTICS *//////////////////////
 async function showStatistics() {
-
   hideAllForms();
   screen.textContent = "";
-updateHealthBar();
+  updateHealthBar();
 
   const uid = store.session.userId;
-  if (!uid) { print("NOT LOGGED IN."); return; }
+  if (!uid) {
+    print("NOT LOGGED IN.");
+    return;
+  }
 
   try {
     const snap = await activitiesRef(uid)
@@ -1508,74 +1522,61 @@ updateHealthBar();
       return;
     }
 
-    // --- NEW: streak calculation ---
+    // --- STREAKS ---
     const { currentStreak, bestStreak } = calculateStreaks(list);
 
-// --- TOTAL TIME MOVING ---
-let totalMinutes = 0;
-for (const a of list) {
-  totalMinutes += Number(a.duration || 0);
-}
-
-// --- TOP DAY ---
-const dayTotals = {}; // { "2026-01-14": 45, ... }
-for (const a of list) {
-  const date = a.date.trim().slice(0, 10);
-  if (!dayTotals[date]) dayTotals[date] = 0;
-  dayTotals[date] += Number(a.duration || 0);
-}
-
-let topDay = null;
-let topDayMinutes = 0;
-for (const [date, mins] of Object.entries(dayTotals)) {
-  if (mins > topDayMinutes) {
-    topDayMinutes = mins;
-    topDay = date;
-  }
-}
-
-// --- 7-DAY CONSECUTIVE PERIOD ---
-const allDates = Object.keys(dayTotals).sort(); // oldest → newest
-
-if (allDates.length > 0) {
-  // Build full date range (no gaps)
-  const startDate = new Date(allDates[0]);
-  const endDate = new Date(allDates[allDates.length - 1]);
-
-  const fullRange = [];
-  let d = new Date(startDate);
-
-  while (d <= endDate) {
-    const key = d.toISOString().slice(0, 10);
-    fullRange.push({
-      date: key,
-      minutes: dayTotals[key] || 0
-    });
-    d.setDate(d.getDate() + 1);
-  }
-
-  // Slide a 7-day window across the full range
-  let best7Total = 0;
-  let best7Start = null;
-
-  for (let i = 0; i <= fullRange.length - 7; i++) {
-    let sum = 0;
-    for (let j = 0; j < 7; j++) {
-      sum += fullRange[i + j].minutes;
+    // --- TOTAL TIME MOVING ---
+    let totalMinutes = 0;
+    for (const a of list) {
+      totalMinutes += Number(a.duration || 0);
     }
 
-    if (sum > best7Total) {
-      best7Total = sum;
-      best7Start = fullRange[i].date;
+    // --- TOP DAY ---
+    const dayTotals = {};
+    for (const a of list) {
+      const date = a.date.trim().slice(0, 10);
+      if (!dayTotals[date]) dayTotals[date] = 0;
+      dayTotals[date] += Number(a.duration || 0);
     }
-  }
 
-  topWeekMinutes = best7Total;
-  topWeekStart = best7Start;
-}
+    let topDayMinutes = 0;
+    for (const mins of Object.values(dayTotals)) {
+      if (mins > topDayMinutes) topDayMinutes = mins;
+    }
 
-    const totals = {}; // { type: { minutes, distance } }
+    // --- TOP WEEK (7‑day window) ---
+    const allDates = Object.keys(dayTotals).sort();
+    let topWeekMinutes = 0;
 
+    if (allDates.length > 0) {
+      const startDate = new Date(allDates[0]);
+      const endDate = new Date(allDates[allDates.length - 1]);
+
+      const fullRange = [];
+      let d = new Date(startDate);
+
+      while (d <= endDate) {
+        const key = d.toISOString().slice(0, 10);
+        fullRange.push({
+          date: key,
+          minutes: dayTotals[key] || 0
+        });
+        d.setDate(d.getDate() + 1);
+      }
+
+      for (let i = 0; i <= fullRange.length - 7; i++) {
+        let sum = 0;
+        for (let j = 0; j < 7; j++) {
+          sum += fullRange[i + j].minutes;
+        }
+        if (sum > topWeekMinutes) {
+          topWeekMinutes = sum;
+        }
+      }
+    }
+
+    // --- TOTALS BY TYPE ---
+    const totals = {};
     for (const a of list) {
       const type = (a.type || "").trim();
       if (!type) continue;
@@ -1591,53 +1592,96 @@ if (allDates.length > 0) {
     const rows = Object.entries(totals)
       .sort(([, A], [, B]) => B.minutes - A.minutes);
 
-const lines = [
-  `<div class="pip-title">STREAKS</div>`,
-  `Current streak: ${currentStreak} day(s)`,
-  `Best streak: ${bestStreak} day(s)`,
+    // --- BUILD STAT LINES ---
+    const lines = [
+      `<div class="pip-title">STREAKS</div>`,
+      `Current streak: ${currentStreak} day(s)`,
+      `Best streak: ${bestStreak} day(s)`,
 
-  `<div class="pip-title">MOVEMENT TOTALS</div>`,
-  `Total time moving: ${formatMinutes(totalMinutes)}`,
-  `Top day: ${formatMinutes(topDayMinutes)}`,
-  `Top week: ${formatMinutes(topWeekMinutes)}`,
+      `<div class="pip-title">MOVEMENT TOTALS</div>`,
+      `Total time moving: ${formatMinutes(totalMinutes)}`,
+      `Top day: ${formatMinutes(topDayMinutes)}`,
+      `Top week: ${formatMinutes(topWeekMinutes)}`,
 
-  `<div class="pip-title">TOTALS BY TYPE</div>`
-];
+      `<div class="pip-title">TOTALS BY TYPE</div>`
+    ];
 
+    for (const [type, t] of rows) {
+      const minutes = formatMinutes(t.minutes);
+      const distance = t.distance ? `${t.distance.toFixed(2)} Km` : "";
+      const line = distance
+        ? `${type} - ${minutes} - ${distance}`
+        : `${type} - ${minutes}`;
+      lines.push(line);
+    }
 
+    // --- RENDER STATS ---
+    screen.innerHTML =
+      lines
+        .map(line => {
+          if (line.includes("pip-title")) {
+            return line;
+          }
+          return `<div class="stat-line pip-item">${line}</div>`;
+        })
+        .join("");
 
-      for (const [type, t] of rows) {
-        const minutes = formatMinutes(t.minutes);
-        const distance = t.distance ? `${t.distance.toFixed(2)} Km` : "";
-        const line = distance
-          ? `${type} - ${minutes} - ${distance}`
-          : `${type} - ${minutes}`;
-        lines.push(line);
+    // --- FRIENDS SECTION (inline, using same logic as showFriends) ---
+    const followingHtml = await renderFollowingList();
+    const followerCount = await getFollowerCount();
+    const followingCount = followingHtml.trim() === "" ? 0 : followingHtml.split("\n").length;
+
+    const friendsContainer = document.createElement("div");
+    friendsContainer.id = "statsFriendsContainer";
+    friendsContainer.style.marginTop = "24px";
+    screen.appendChild(friendsContainer);
+
+    // Titles
+    const followersTitle = document.createElement("div");
+    followersTitle.classList.add("pip-title");
+    followersTitle.textContent = `FOLLOWERS — ${followerCount}`;
+    friendsContainer.appendChild(followersTitle);
+
+    const followingTitle = document.createElement("div");
+    followingTitle.classList.add("pip-title");
+    followingTitle.textContent = `FOLLOWING — ${followingCount}`;
+    friendsContainer.appendChild(followingTitle);
+
+    // Following list
+    const linesArr = followingHtml.split("\n");
+    linesArr.forEach(line => {
+      if (!line.trim()) return;
+
+      const div = document.createElement("div");
+      div.classList.add("line");
+      div.textContent = line;
+
+      if (line.trim().startsWith(">")) {
+        const username = line.trim().replace(/^>\s*/, "");
+        div.style.cursor = "pointer";
+        div.onclick = () => toggleFriendDetails(div, username);
       }
 
-const friendsHtml = await showFriends(true);
-lines.push(friendsHtml);
+      friendsContainer.appendChild(div);
+    });
 
-const controls = document.getElementById("friendControls");
-controls.classList.remove("hidden");
+    // Spacer (like showFriends)
+    const followTitle = document.createElement("div");
+    followTitle.innerHTML = `<strong></strong>`;
+    followTitle.style.marginTop = "32px";
+    followTitle.style.marginBottom = "12px";
+    friendsContainer.appendChild(followTitle);
 
-
-screen.innerHTML =
-  lines
-    .map(line => {
-      if (line.includes("pip-title")) {
-        return line; // bright title
-      }
-      return `<div class="stat-line pip-item">${line}</div>`; // dim items
-    })
-    .join("");
-
+    // Show friend controls
+    const controls = document.getElementById("friendControls");
+    if (controls) controls.classList.remove("hidden");
 
   } catch (err) {
     console.error(err);
     print(`STATS FAILED: ${err.code || ""} ${err.message || err}`);
   }
 }
+
 
 
 
@@ -1660,6 +1704,12 @@ loadActivitySuggestions();
 importActivityNamesFromHistory();
 
 showApp(true);
+
+// Remove all old highlights
+document.querySelectorAll('#menu button').forEach(btn =>
+  btn.classList.remove('active')
+);
+
 
 document.querySelector('#menu button[data-action="log"]').classList.add('active');
 document.getElementById("healthBarWrapper").style.display = "block";
