@@ -70,10 +70,7 @@ function updateDailyQuote() {
 }
 
 const PROMO_MESSAGE = `
-Any move is a good move. ActivLog helps you capture them, build momentum, and keep going.
-<div></div>
-Simple, manual activity logging for real people who want to stay aware of their daily movement without fitness pressure, metrics overload, or automatic tracking.
-`;
+Any move is a good move. ActivLog helps you capture them, build momentum, and keep going.`;
 
 const PROMO_FEATURES = `
 Beginner friendly & low pressure
@@ -419,6 +416,8 @@ function showActivityForm() {
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
+addActivityBtn.classList.remove("hidden"); 
+savechangesBtn.classList.add("hidden");
 
   store.editingActivity = null;
   addActivityBtn.textContent = "Add Activity";
@@ -438,7 +437,22 @@ function showActivityForm() {
   if (activityDate.value > activityDate.max) {
     activityDate.value = activityDate.max;
   }
+
+
+  // Cancel button behavior here
+  const cancelBtn = document.getElementById("cancelEditWindowBtn");
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      store.editingActivity = null;
+      addActivityBtn.textContent = "Add Activity";
+      cancelBtn.classList.add("hidden");
+      deleteActivityBtn.classList.add("hidden");
+      hideAllForms();
+      showHistory();
+    };
+  }
 }
+
 
 
 function openEditActivity(activity) {
@@ -697,19 +711,24 @@ loadActivitySuggestions();
   };
 
   try {
-    if (store.editingActivity && store.editingActivity.id) {
-      // UPDATE
-      await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
-	updateHealthBar();
-      store.editingActivity = null;
-      addActivityBtn.textContent = "Add Activity";
-      if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
 
-      hideAllForms();
-      print("Activity updated.");
-      await showHistory();
-      return;
-    }
+if (store.editingActivity && store.editingActivity.id) {
+  // UPDATE
+  await activitiesRef(uid).doc(store.editingActivity.id).update(payload);
+  updateHealthBar();
+
+  store.editingActivity = null;
+  addActivityBtn.textContent = "Add Activity";
+  if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
+  document.getElementById("cancelEditWindowBtn").classList.add("hidden");
+
+  hideAllForms();
+  print("Activity updated.");
+  await showHistory();
+  return;
+}
+
+
 
     // ADD
     await activitiesRef(uid).add({
@@ -969,55 +988,80 @@ function loadActivitySuggestions() {
 
 /////////////////////////*FRIENDS*////////////////////////////////////////
 
-screen.classList.add("friends-screen");
 
-async function showFriends() {
+async function showFriends(returnHtml = false) {
   hideAllForms();
 
-document.getElementById("friendControls").classList.remove("hidden");
+  const followingHtml = await renderFollowingList();
+  const followerCount = await getFollowerCount();
+  const followingCount = followingHtml.trim() === "" ? 0 : followingHtml.split("\n").length;
 
-const followingHtml = await renderFollowingList();
-const followerCount = await getFollowerCount();
+  // --- RETURN-HTML MODE (for Statistics) ---
+  if (returnHtml) {
+    let html = "";
 
-// Count how many people you follow
-const followingCount = followingHtml.trim() === "" ? 0 : followingHtml.split("\n").length;
+    html += `<div class="pip-title">FOLLOWERS — ${followerCount}</div>`;
+    html += `<div class="pip-title">FOLLOWING — ${followingCount}</div>`;
 
-// Clear screen
-screen.innerHTML = "";
+    const lines = followingHtml.split("\n");
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      html += `<div class="line">${line}</div>`;
+    });
 
+    // FOLLOW title spacer (kept for consistency)
+    html += `<div class="line"><strong></strong></div>`;
 
-
-// FOLLOWERS title
-screen.insertAdjacentHTML( "beforeend", `<div class="pip-title">FOLLOWERS — ${followerCount}</div>` );
-
-// FOLLOWING title
-screen.insertAdjacentHTML( "beforeend", `<div class="pip-title">FOLLOWING — ${followingCount}</div>` );
-
-// Following list
-const lines = followingHtml.split("\n");
-lines.forEach(line => {
-  if (!line.trim()) return;
-
-  const div = document.createElement("div");
-  div.classList.add("line");
-  div.textContent = line;
-
-  if (line.trim().startsWith(">")) {
-    const username = line.trim().replace(/^>\s*/, "");
-    div.style.cursor = "pointer";
-    div.onclick = () => toggleFriendDetails(div, username);
+    return html;
   }
 
-  screen.appendChild(div);
-});
+  // --- NORMAL FRIENDS SCREEN MODE ---
+  screen.classList.add("friends-screen");
 
-// FOLLOW title
-const followTitle = document.createElement("div");
-followTitle.innerHTML = `<strong></strong>`;
-followTitle.style.marginTop = "32px";
-followTitle.style.marginBottom = "12px";
-screen.appendChild(followTitle);
+  const controls = document.getElementById("friendControls");
+  if (controls) controls.classList.remove("hidden");
+
+  // Clear screen
+  screen.innerHTML = "";
+
+  // FOLLOWERS title
+  screen.insertAdjacentHTML(
+    "beforeend",
+    `<div class="pip-title">FOLLOWERS — ${followerCount}</div>`
+  );
+
+  // FOLLOWING title
+  screen.insertAdjacentHTML(
+    "beforeend",
+    `<div class="pip-title">FOLLOWING — ${followingCount}</div>`
+  );
+
+  // Following list
+  const lines = followingHtml.split("\n");
+  lines.forEach(line => {
+    if (!line.trim()) return;
+
+    const div = document.createElement("div");
+    div.classList.add("line");
+    div.textContent = line;
+
+    if (line.trim().startsWith(">")) {
+      const username = line.trim().replace(/^>\s*/, "");
+      div.style.cursor = "pointer";
+      div.onclick = () => toggleFriendDetails(div, username);
+    }
+
+    screen.appendChild(div);
+  });
+
+  // FOLLOW title
+  const followTitle = document.createElement("div");
+  followTitle.innerHTML = `<strong></strong>`;
+  followTitle.style.marginTop = "32px";
+  followTitle.style.marginBottom = "12px";
+  screen.appendChild(followTitle);
 }
+
 
 // FOLLOW //
 async function addFriendByUsername() {
@@ -1341,7 +1385,8 @@ for (const a of list) {
         const notes = a.notes ? ` (${a.notes})` : "";
         const base = showDateLabel ? `${dateLabel} — ${a.type}` : a.type;
         const line = `> ${base} — ${formatMinutes(a.duration)}${dist}${notes}`;
-        html += `<div class="activity-line" data-id="${a.id}">${line}</div><br>`;
+        html += `<div class="stat-line activity-line" data-id="${a.id}">${line}</div>`;
+
       }
 
       append("");
@@ -1353,8 +1398,8 @@ for (const a of list) {
     if (groups.today.length) {
       appendGroup("", groups.today, false);
     } else {
-append(`<div class="line">(none)</div>`);
-append(`<div class="line"></div>`);
+append(`<div class="stat-line">(none)</div>`);
+append(`<div class="stat-line"></div>`);
 
     }
 
@@ -1416,15 +1461,28 @@ screen.addEventListener("click", (e) => {
   if (!activity) return;
 
   store.editingActivity = activity;
+document.getElementById("cancelEditWindowBtn").classList.remove("hidden");
+addActivityBtn.textContent = "Save Activity";
+
 
   const dist = activity.distance != null && activity.distance !== "" ? ` — ${activity.distance}` : "";
   const notes = activity.notes ? ` (${activity.notes})` : "";
   const line = `${activity.type} — ${activity.duration} min${dist}${notes}`;
 
-  screen.innerHTML =
-    `EDIT THIS ACTIVITY?<br>${line}<br><br>` +
-    `<span data-confirm="yes">[YES]</span>&nbsp;&nbsp;` +
-    `<span data-confirm="no">[NO]</span>`;
+screen.innerHTML = `
+  <div class="edit-confirm">
+    <div class="pip-title">EDIT ACTIVITY</div>
+    <div class="stat-line confirm-line">${line}</div>
+
+    <div class="confirm-row">
+      <span class="pip-btn" data-confirm="yes">YES</span>
+      <span class="pip-btn" data-confirm="no">NO</span>
+    </div>
+  </div>
+`;
+
+
+
 });
 
 
@@ -1557,6 +1615,12 @@ const lines = [
         lines.push(line);
       }
 
+const friendsHtml = await showFriends(true);
+lines.push(friendsHtml);
+
+const controls = document.getElementById("friendControls");
+controls.classList.remove("hidden");
+
 
 screen.innerHTML =
   lines
@@ -1600,11 +1664,11 @@ showApp(true);
 document.querySelector('#menu button[data-action="log"]').classList.add('active');
 document.getElementById("healthBarWrapper").style.display = "block";
 
+console.log("friendControls classes:", document.getElementById("friendControls").className);
+
 setTimeout(() => {
   updateHealthBar();
 }, 50);
-
-
 
 
   } else {
