@@ -288,17 +288,28 @@ function formatMinutes(min) {
 
 /////////// health ////////////
 
-function calculateHealthScore(streak, minutesToday) {
+function calculateHealth(streak, minutesToday, followerCount, followingCount) {
+  // 1. Social score (max 20%)
+  const socialCount = followerCount + followingCount;
+  const socialScore = Math.min(socialCount, 20);
 
-  // Convert streak to 0–100
-  const streakScore = Math.min(streak * 15, 100); // 10 days = 100%
+  // 2. Streak score (0–100)
+  const streakScore = Math.min(streak * 15, 100);
 
-  // Convert minutes to 0–100
-  const activityScore = Math.min(minutesToday * 3, 100); // 50 min = 100%
+  // 3. Activity score (0–100)
+  const activityScore = Math.min(minutesToday * 3, 100);
 
-  // Blend them
-  return Math.round(streakScore * 0.4 + activityScore * 0.6);
+  // 4. Blend streak + activity into 0–79%
+  const blended = streakScore * 0.4 + activityScore * 0.6;
+  const blendedScaled = blended * 0.79;
+
+  // 5. Add baseline + social + blended
+  let health = 1 + socialScore + blendedScaled;
+
+  // 6. Cap at 100%
+  return Math.round(Math.min(health, 100));
 }
+
 
 async function updateHealthBar() {
   const uid = store.session.userId;
@@ -324,31 +335,37 @@ async function updateHealthBar() {
     }
   }
 
-  // Calculate health score
-  const health = calculateHealthScore(currentStreak, minutesToday);
-//health = Math.max(20, health);
+  // NEW: load social counts
+  const followerCount = await getFollowerCount();
+  const followingCount = await getFollowingCount();
 
+  // NEW: use your new formula
+  const health = calculateHealth(
+    currentStreak,
+    minutesToday,
+    followerCount,
+    followingCount
+  );
 
   // Update bar
   const bar = document.getElementById("healthBarFill");
   const label = document.getElementById("healthBarLabel");
 
   if (!bar || !label) return;
-document.getElementById("healthBarWrapper").style.display = "block";
 
+  document.getElementById("healthBarWrapper").style.display = "block";
 
   bar.style.width = health + "%";
 
-bar.classList.remove("low", "mid", "high");
+  bar.classList.remove("low", "mid", "high");
 
-if (health < 30) {
-  bar.classList.add("low");
-} else if (health < 70) {
-  bar.classList.add("mid");
-} else {
-  bar.classList.add("high");
-}
-
+  if (health < 30) {
+    bar.classList.add("low");
+  } else if (health < 70) {
+    bar.classList.add("mid");
+  } else {
+    bar.classList.add("high");
+  }
 
   label.textContent = `Health: ${health}%`;
 }
@@ -778,19 +795,22 @@ async function importActivityNamesFromHistory() {
   const uid = store.session.userId;
   if (!uid) return;
 
-  const localList = JSON.parse(localStorage.getItem("activityNames") || "[]");
-  const names = new Set(localList);
-
   const snap = await activitiesRef(uid).get();
+
+  const names = new Set();
 
   snap.forEach(doc => {
     const type = doc.data().type;
-    if (type) names.add(type.trim());
+    if (type && type.trim()) {
+      names.add(type.trim());
+    }
   });
 
+  // Save ONLY the user's real activity names
   localStorage.setItem("activityNames", JSON.stringify([...names]));
   loadActivitySuggestions();
 }
+
 
 
 function showModalDropdown(filter = "") {
@@ -1222,6 +1242,18 @@ async function getFollowerCount() {
   const followsRef = firebase.firestore().collection("follows");
   const snap = await followsRef
     .where("followingUid", "==", currentUser.uid)
+    .get();
+
+  return snap.size;
+}
+
+async function getFollowingCount() {
+  const uid = store.session.userId;
+  if (!uid) return 0;
+
+  const snap = await firebase.firestore()
+    .collection("follows")
+    .where("followerUid", "==", uid)
     .get();
 
   return snap.size;
@@ -1690,7 +1722,7 @@ async function showStatistics() {
 
 //////////////////////////* BOOT */////////////////////////////
 auth.onAuthStateChanged(async (user) => {
-updateDailyQuote();
+  updateDailyQuote();
   if (store.authBusy) return;
 
   if (user) {
@@ -1700,26 +1732,32 @@ updateDailyQuote();
     store.session.username = uname || store.session.username || "USER";
 
     save();
-loadActivitySuggestions();
-importActivityNamesFromHistory();
+    loadActivitySuggestions();
+    importActivityNamesFromHistory();
 
-showApp(true);
+    showApp(true);
 
-// Remove all old highlights
-document.querySelectorAll('#menu button').forEach(btn =>
-  btn.classList.remove('active')
-);
+// After showApp(true)
+const cornerBtn = document.getElementById("pipInfoCorner");
+const cornerPanel = document.getElementById("pipInfoCornerPanel");
 
+if (cornerBtn && cornerPanel) {
+  cornerBtn.addEventListener("click", () => {
+    cornerPanel.classList.toggle("hidden");
+  });
+}
 
-document.querySelector('#menu button[data-action="log"]').classList.add('active');
-document.getElementById("healthBarWrapper").style.display = "block";
+    // Remove all old highlights
+    document.querySelectorAll('#menu button').forEach(btn =>
+      btn.classList.remove('active')
+    );
 
-console.log("friendControls classes:", document.getElementById("friendControls").className);
+    document.querySelector('#menu button[data-action="log"]').classList.add('active');
+    document.getElementById("healthBarWrapper").style.display = "block";
 
-setTimeout(() => {
-  updateHealthBar();
-}, 50);
-
+    setTimeout(() => {
+      updateHealthBar();
+    }, 50);
 
   } else {
     store.session.userId = null;
@@ -1729,13 +1767,3 @@ setTimeout(() => {
   }
 });
 
-function handleLoginKey(e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    loginBtn.click();
-  }
-}
-
-loginEmail.addEventListener("keydown", handleLoginKey);
-loginPin.addEventListener("keydown", handleLoginKey);
-loginUser.addEventListener("keydown", handleLoginKey);
