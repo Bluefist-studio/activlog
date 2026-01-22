@@ -285,6 +285,20 @@ function formatMinutes(min) {
 }
 
 
+function scrollBelowMenu() {
+  const anchor = document.getElementById("menuAnchor");
+  anchor.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+
+
+
+
+
+
 
 /////////// health ////////////
 
@@ -367,7 +381,19 @@ async function updateHealthBar() {
     bar.classList.add("high");
   }
 
-  label.textContent = `Health: ${health}%`;
+  label.innerHTML = `<span id="healthInfoToggle">[i]</span> HEALTH: <span id="healthValue">${health}%</span>`;
+
+// Attach info toggle AFTER label is rendered
+const toggle = document.getElementById("healthInfoToggle");
+const panel = document.getElementById("healthInfoPanel");
+
+if (toggle && panel && !toggle.dataset.bound) {
+  toggle.dataset.bound = "true"; // prevents double-binding
+  toggle.addEventListener("click", () => {
+    panel.classList.toggle("hidden");
+  });
+}
+
 }
 
 
@@ -429,24 +455,33 @@ if (promo) promo.classList.add("hidden"); updateDailyQuote();
 }
 
 function showActivityForm() {
-
   hideAllForms();
   screen.textContent = "";
   activityForm.classList.remove("hidden");
-addActivityBtn.classList.remove("hidden"); 
-savechangesBtn.classList.add("hidden");
+  activityForm.classList.remove("editing"); // reset edit mode
+
+  addActivityBtn.classList.remove("hidden");
+  savechangesBtn.classList.add("hidden");
 
   store.editingActivity = null;
+
+  // Reset buttons
   addActivityBtn.textContent = "Add Activity";
+
   if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
 
+  const cancelBtn = document.getElementById("cancelEditWindowBtn");
+  if (cancelBtn) cancelBtn.classList.add("hidden");
+
+  // Reset fields
   activityType.value = "";
   activityDuration.value = "";
   activityNotes.value = "";
+
   const distEl = document.getElementById("activityDistance");
   if (distEl) distEl.value = "";
 
-  // ALWAYS reset date to today
+  // Reset date
   const today = getLocalDateString();
   activityDate.value = today;
   activityDate.max = today;
@@ -455,20 +490,19 @@ savechangesBtn.classList.add("hidden");
     activityDate.value = activityDate.max;
   }
 
-
-  // Cancel button behavior here
-  const cancelBtn = document.getElementById("cancelEditWindowBtn");
+  // Cancel button behavior
   if (cancelBtn) {
     cancelBtn.onclick = () => {
       store.editingActivity = null;
       addActivityBtn.textContent = "Add Activity";
       cancelBtn.classList.add("hidden");
-      deleteActivityBtn.classList.add("hidden");
+      if (deleteActivityBtn) deleteActivityBtn.classList.add("hidden");
       hideAllForms();
       showHistory();
     };
   }
 }
+
 
 
 
@@ -621,6 +655,7 @@ document.addEventListener("click", e => {
   const btn = e.target.closest("[data-action]");
   if (!btn) return;
 
+
   const action = btn.dataset.action;
 
   if (!action) return;
@@ -677,6 +712,8 @@ document.addEventListener("click", e => {
       return;
   }
 
+setTimeout(scrollBelowMenu, 50);
+
   document.getElementById("healthBarWrapper").style.display = "block";
   updateHealthBar();
 });
@@ -708,6 +745,8 @@ addActivityBtn.addEventListener("click", async () => {
   const type = activityType.value.trim();
   const duration = activityDuration.value;
   const notes = activityNotes.value.trim();
+
+window.scrollTo({ top: 0, behavior: "smooth" });
 
   // Raw date from input OR today
   let rawDate = activityDate.value || new Date().toISOString().slice(0, 10);
@@ -1737,16 +1776,6 @@ auth.onAuthStateChanged(async (user) => {
 
     showApp(true);
 
-// After showApp(true)
-const cornerBtn = document.getElementById("pipInfoCorner");
-const cornerPanel = document.getElementById("pipInfoCornerPanel");
-
-if (cornerBtn && cornerPanel) {
-  cornerBtn.addEventListener("click", () => {
-    cornerPanel.classList.toggle("hidden");
-  });
-}
-
     // Remove all old highlights
     document.querySelectorAll('#menu button').forEach(btn =>
       btn.classList.remove('active')
@@ -1766,4 +1795,5 @@ if (cornerBtn && cornerPanel) {
     showLogin();
   }
 });
+
 
