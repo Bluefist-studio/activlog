@@ -285,14 +285,6 @@ function formatMinutes(min) {
 }
 
 
-function scrollBelowMenu() {
-  const anchor = document.getElementById("menuAnchor");
-  anchor.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-}
-
 
 
 
@@ -712,11 +704,37 @@ document.addEventListener("click", e => {
       return;
   }
 
-setTimeout(scrollBelowMenu, 50);
+setTimeout(scrollBelowMenu, 150);
 
   document.getElementById("healthBarWrapper").style.display = "block";
   updateHealthBar();
 });
+
+function scrollBelowMenu() {
+  // Freeze scroll so the browser can't auto‑scroll during layout changes
+  document.body.style.overflow = "hidden";
+
+  // Wait for layout to finish (2 frames)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+
+      const anchor = document.getElementById("menuAnchor");
+      const rect = anchor.getBoundingClientRect();
+      const absoluteTop = rect.top + window.scrollY;
+
+      // Now perform the real scroll
+      window.scrollTo({
+        top: absoluteTop,
+        behavior: "smooth"
+      });
+
+      // Unfreeze scroll
+      document.body.style.overflow = "";
+    });
+  });
+}
+
+
 
 
 
