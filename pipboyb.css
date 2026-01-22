@@ -341,6 +341,22 @@ text-weight: normal;
   z-index: 9999;
 }
 
+/////////*anchor*//////////
+#menuAnchor {
+  height: 1px;
+}
+
+.pipboy-theme {
+  position: static !important;
+  overflow-y: visible !important;
+}
+html, body {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  scroll-padding-top: 0 !important;
+}
+
+
 
 /////////////////* Modal title *///////////////////
 .modal-title {
@@ -415,7 +431,6 @@ body.modal-open {
   overflow: hidden;
   height: 100vh;
 }
-
 
 
 
@@ -584,35 +599,30 @@ body.modal-open {
 }
 
 //*INFO*//
-.pip-info-corner {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 8px;
-  border: 2px solid #4cff6a;
-  color: #8cff9a;
+#healthInfoToggle {
   cursor: pointer;
-  font-size: 26px;
+  padding-right: 6px;
+  color: #8cff9a;
   text-shadow: 0 0 4px #8cff9a;
-  z-index: 9999;
 }
 
-.pip-info-corner:hover {
+#healthInfoToggle:hover {
   background: rgba(76,255,106,0.2);
   box-shadow: 0 0 8px #4cff6a;
 }
 
-.pip-info-corner-panel {
-  position: absolute;
-  top: 50px;
-  right: 12px;
-  width: 260px;
+#healthInfoPanel {
+  margin-top: 10px;
   padding: 12px;
   border: 2px solid #4cff6a;
-  background: rgba(10,31,20,0.85);
+  background: rgba(10,31,20,0.6);
   box-shadow: 0 0 12px #4cff6a;
   border-radius: 4px;
-  z-index: 9999;
+  width: 260px;
+}
+
+.hidden {
+  display: none;
 }
 
 
