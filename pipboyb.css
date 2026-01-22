@@ -346,16 +346,6 @@ text-weight: normal;
   height: 1px;
 }
 
-.pipboy-theme {
-  position: static !important;
-  overflow-y: visible !important;
-}
-html, body {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-  scroll-padding-top: 0 !important;
-}
-
 
 
 /////////////////* Modal title *///////////////////
