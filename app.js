@@ -295,26 +295,31 @@ function formatMinutes(min) {
 /////////// health ////////////
 
 function calculateHealth(streak, minutesToday, followerCount, followingCount) {
-  // 1. Social score (max 20%)
-  const socialCount = followerCount + followingCount;
-  const socialScore = Math.min(socialCount, 20);
+  // 1. Base
+  const base = 1;
 
-  // 2. Streak score (0–100)
-  const streakScore = Math.min(streak * 15, 100);
+  // 2. Social (fixed 9%)
+  const social = Math.min(followerCount + followingCount, 9);
 
-  // 3. Activity score (0–100)
-  const activityScore = Math.min(minutesToday * 3, 100);
+  // 3. Time bonus: 1% per minute, max 30%
+  const timeBonus = Math.min(minutesToday, 30);
 
-  // 4. Blend streak + activity into 0–79%
-  const blended = streakScore * 0.4 + activityScore * 0.6;
-  const blendedScaled = blended * 0.79;
+  // 4. Streak bonus:
+  // streak 1 → 0%
+  // streak 2 → 10%
+  // streak 3 → 20%
+  // ...
+  // streak 7 → 60%
+  // streak 8+ → capped at 60%
+  const streakBonus = Math.min(Math.max(streak, 0) * 10, 60);
 
-  // 5. Add baseline + social + blended
-  let health = 1 + socialScore + blendedScaled;
+  // 5. Total health
+  let health = base + social + timeBonus + streakBonus;
 
   // 6. Cap at 100%
   return Math.round(Math.min(health, 100));
 }
+
 
 
 async function updateHealthBar() {
